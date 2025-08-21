@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "gluestack-ui-boilerplate",
+    "slug": "gluestack-ui-boilerplate",
     "version": "1.0.0",
+    "scheme": "gluestackuiboilerplate",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,10 +21,22 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.zeeshantechdots.myapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "reactnative-gluestack-ui-boilerplate",
+          "organization": "techdots-mr"
+        }
+      ]
+    ]
   }
 }
