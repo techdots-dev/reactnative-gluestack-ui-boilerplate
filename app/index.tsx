@@ -1,29 +1,11 @@
-import { View, Text } from "react-native";
-import { useEffect } from "react";
-import { login } from "@/src/api/auth";
+// // app/index.tsx
+// import { Redirect } from "expo-router";
 
-export default function Home() {
-    const email = "test@example.com";
-    const password = "123456";
+import { Redirect } from "expo-router";
+import _layout from "./_layout";
 
-    useEffect(() => {
-        const handleLogin = async () => {
-            try {
-              const res = await login(email, password);
-              console.log(`Logged in as!: `, res);
-            } catch (err: any) {
-              console.log(err.message);
-            }
-        };
-    handleLogin()
-    
-    }, [])
-
-  return (
-    <View
-      style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-    >
-      <Text>Welcome to React Native Gluestack-ui-Boilerplate</Text>
-    </View>
-  );
+export default function Index() {
+  return <Redirect href="/login" />;
 }
+
+// _layout
