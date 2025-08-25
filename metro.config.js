@@ -3,7 +3,7 @@ const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
 let config = getSentryExpoConfig(__dirname);
 
-config = withNativeWind(config);
+// config = withNativeWind(config);
 
 config.resolver = {
   ...config.resolver,
@@ -13,4 +13,4 @@ config.resolver = {
   },
 };
 
-module.exports = config;
+module.exports = withNativeWind(config, { input: './global.css' })

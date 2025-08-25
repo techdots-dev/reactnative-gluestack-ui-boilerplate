@@ -6,8 +6,6 @@ const { API_URL } = Constants.expoConfig?.extra || {};
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // start delay in ms
 
-console.log(API_URL)
-
 const axiosClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
@@ -63,6 +61,7 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
     while (attempt < MAX_RETRIES) {
       try {
         const { data } = await axiosClient.request<T>(config);
+
         return data;
       } catch (err: any) {
         const isNetworkError = !err.response; // No response means network failed

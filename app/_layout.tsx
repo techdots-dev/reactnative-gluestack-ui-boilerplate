@@ -1,3 +1,4 @@
+import "@/global.css"
 import { Slot } from "expo-router";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { PostHogProvider } from "posthog-react-native";
@@ -5,6 +6,8 @@ import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import { useScreenTracking } from "@/src/hooks/useScreenTracking";
 import posthog from "@/src/hooks/provider/posthog";
+import { LoadingProvider } from "@/src/contexts/LoadingContext";
+import { GlobalLoader } from "@/src/components/GlobalLoader";
 
 const { SENTRY_DSN } = Constants.expoConfig?.extra || {};
 
@@ -24,7 +27,12 @@ function Providers({ children }: { children: React.ReactNode }) {
         captureScreens: false, // 🚨 prevent useNavigation crash
       }}
     >
-      <GluestackUIProvider mode="light">{children}</GluestackUIProvider>
+      <GluestackUIProvider mode="light">
+        <LoadingProvider>
+          {children}
+          <GlobalLoader />
+        </LoadingProvider>
+      </GluestackUIProvider>
     </PostHogProvider>
   );
 }
@@ -32,7 +40,7 @@ function Providers({ children }: { children: React.ReactNode }) {
 export default Sentry.wrap(function RootLayout() {
   return (
     <Providers>
-      <Slot />
+      <Slot screenOptions={{ headerShown: false }}/>
     </Providers>
   );
 });

@@ -1,22 +1,80 @@
-import { apiRequest } from './client';
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
+import { useLoading } from "../contexts/LoadingContext";
+import { apiRequest } from "./client";
 
 const { API_MODE } = Constants.expoConfig?.extra || {};
 
-export const login = async (email: string, password: string): Promise<any> => {
-  if (API_MODE === 'mock') {
-    // In-app mock
-    if (email === 'test@example.com' && password === '123456') {
-      return { token: 'mock-token-123', name: 'Mock User' };
-    } else {
-      throw new Error('Invalid credentials (mock)');
-    }
-  }
+export const useAuthApi = () => {
+  const { showLoading, hideLoading } = useLoading(); // global loading
 
-  // Real API
-    return await apiRequest<any>({
-    url: '/users/tokens',
-    method: 'post',
-    data: {auth: {email, password} },
+  const handleApi = async (apiFn: () => Promise<any>) => {
+    try {
+      showLoading();
+      const res = await apiFn();
+      hideLoading();
+      return res;
+    } catch (err: any) {
+      hideLoading();
+      throw err;
+    }
+  };
+
+  const login = (email: string, password: string) => handleApi(async () => {
+    if (API_MODE === "mock") {
+      if (email === "test@example.com" && password === "123456") {
+        return { success: true, data: { token: "mock-token-123", name: "Mock User" } };
+      } else {
+        return { success: false, message: "Invalid credentials (mock)" };
+      }
+    }
+
+    try {
+      const data = await apiRequest<any>({
+        url: "/users/tokens",
+        method: "POST",
+        data: { auth: { email, password } },
+      });
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
   });
+
+  const signup = (name: string, email: string, password: string) =>
+    handleApi(async () => {
+      if (API_MODE === "mock") {
+        if (name && email && password) return { success: true, data: { token: "mock-signup-token", name } };
+        else return { success: false, message: "Missing required fields (mock)" };
+      }
+      try {
+        const data = await apiRequest<any>({
+          url: "/users",
+          method: "POST",
+          data: { user: { name, email, password } },
+        });
+        return { success: true, data };
+      } catch (err: any) {
+        return { success: false, message: err.message };
+      }
+    });
+
+  const forgotPassword = (email: string) =>
+    handleApi(async () => {
+      if (API_MODE === "mock") {
+        if (email === "test@example.com") return { success: true, data: { message: "Password reset link sent (mock)" } };
+        else return { success: false, message: "Email not found (mock)" };
+      }
+      try {
+        const data = await apiRequest<any>({
+          url: "/users/forgot-password",
+          method: "POST",
+          data: { email },
+        });
+        return { success: true, data };
+      } catch (err: any) {
+        return { success: false, message: err.message };
+      }
+    });
+
+  return { login, signup, forgotPassword };
 };
