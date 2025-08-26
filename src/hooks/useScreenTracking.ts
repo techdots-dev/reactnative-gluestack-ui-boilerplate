@@ -1,17 +1,19 @@
+// src/hooks/useScreenTracking.ts
 import { useEffect } from "react";
 import { usePathname } from "expo-router";
-import posthog from "./provider/posthog";
 
-export function useScreenTracking() {
+export function useScreenTracking(client: any) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!pathname) return;
+    if (!pathname || !client) return;
 
     try {
-      posthog.capture("$screen", { screen_name: pathname });
+      client.capture("$screen", { 
+        screen_name: pathname
+      });
     } catch (e) {
       console.warn("PostHog capture failed", e);
     }
-  }, [pathname]);
+  }, [pathname, client]); // Re-run when pathname OR client changes
 }

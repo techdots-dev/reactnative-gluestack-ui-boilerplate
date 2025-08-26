@@ -1,6 +1,6 @@
 // src/hooks/useFeatureFlag.ts
 import { useEffect, useState } from "react";
-import posthog from "./provider/posthog";
+import { initPosthog } from "./provider/posthog";
 
 /**
  * Generic hook to use feature flags from PostHog
@@ -13,8 +13,12 @@ export function useFeatureFlag(flagKey: string, defaultValue = false) {
   useEffect(() => {
     const fetchFlag = async () => {
       try {
-        const isEnabled = await posthog.isFeatureEnabled(flagKey);
-        setEnabled(!!isEnabled); // coerce undefined to false
+        // wait for PostHog to initialize (reads AsyncStorage)
+        const client = await initPosthog();
+
+        // use the initialized client
+        const isEnabled = await client.isFeatureEnabled(flagKey);
+        setEnabled(!!isEnabled); // coerce undefined → false
       } catch (err) {
         setEnabled(defaultValue);
       }
