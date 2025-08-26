@@ -1,11 +1,19 @@
-// // app/index.tsx
-// import { Redirect } from "expo-router";
-
 import { Redirect } from "expo-router";
-import _layout from "./_layout";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { View, ActivityIndicator } from "react-native";
 
 export default function Index() {
-  return <Redirect href="/login" />;
-}
+  const { isLoggedIn, isLoading } = useAuth();
 
-// _layout
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  console.log("is loagged in   ", isLoggedIn)
+
+  return <Redirect href={isLoggedIn ? "/app" : "/auth/login"} />;
+}

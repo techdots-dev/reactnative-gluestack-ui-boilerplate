@@ -4,10 +4,13 @@ import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { PostHogProvider } from "posthog-react-native";
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
-import { useScreenTracking } from "@/src/hooks/useScreenTracking";
-import posthog from "@/src/hooks/provider/posthog";
+import { useScreenTracking } from "@/src/hooks/useScreenTracking";  
 import { LoadingProvider } from "@/src/contexts/LoadingContext";
 import { GlobalLoader } from "@/src/components/GlobalLoader";
+import { AuthProvider } from "@/src/contexts/AuthContext";
+import { SafeAreaView } from "@gluestack-ui/themed";
+import { useEffect, useState } from "react";
+import { initPosthog } from "@/src/hooks/provider/posthog";
 
 const { SENTRY_DSN } = Constants.expoConfig?.extra || {};
 
@@ -18,11 +21,22 @@ Sentry.init({
 });
 
 function Providers({ children }: { children: React.ReactNode }) {
-  useScreenTracking(); // 📊 manual PostHog screen tracking
+  const [client, setClient] = useState<null | any>(null);
+
+  useEffect(() => {
+    (async () => {
+      const instance = await initPosthog();
+      setClient(instance);
+    })();
+  }, []); // runs once on app reload
+
+  useScreenTracking(client); // 📊 manual PostHog screen tracking
+
+  if (!client) return null; // or splash/loading UI
 
   return (
     <PostHogProvider
-      client={posthog}
+      client={client}
       autocapture={{
         captureScreens: false, // 🚨 prevent useNavigation crash
       }}
@@ -39,8 +53,12 @@ function Providers({ children }: { children: React.ReactNode }) {
 
 export default Sentry.wrap(function RootLayout() {
   return (
-    <Providers>
-      <Slot screenOptions={{ headerShown: false }}/>
-    </Providers>
+    <AuthProvider>
+      <Providers>
+        <SafeAreaView className="flex-1">
+          <Slot screenOptions={{ headerShown: false }}/>
+        </SafeAreaView>
+      </Providers>
+    </AuthProvider>
   );
 });

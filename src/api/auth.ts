@@ -22,7 +22,7 @@ export const useAuthApi = () => {
   const login = (email: string, password: string) => handleApi(async () => {
     if (API_MODE === "mock") {
       if (email === "test@example.com" && password === "123456") {
-        return { success: true, data: { token: "mock-token-123", name: "Mock User" } };
+        return { success: true, data: { token: "mock-token-123", user: {name: "Mock User", email: "test@example.com"} } };
       } else {
         return { success: false, message: "Invalid credentials (mock)" };
       }
@@ -43,7 +43,7 @@ export const useAuthApi = () => {
   const signup = (name: string, email: string, password: string) =>
     handleApi(async () => {
       if (API_MODE === "mock") {
-        if (name && email && password) return { success: true, data: { token: "mock-signup-token", name } };
+        if (name && email && password) return { success: true, data: { token: "mock-signup-token", user: {name: "Mock User", email: "test@example.com"} } };
         else return { success: false, message: "Missing required fields (mock)" };
       }
       try {
