@@ -7,7 +7,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // start delay in ms
 
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: 'https://api.stage.soulartists.net/v3',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -61,15 +61,19 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
     while (attempt < MAX_RETRIES) {
       try {
         const { data } = await axiosClient.request<T>(config);
-
+        console.log("data for login   ", data)
         return data;
       } catch (err: any) {
-        const isNetworkError = !err.response; // No response means network failed
+        const isNetworkError = !err.response; // No response = network error
         attempt++;
   
         if (!isNetworkError || attempt >= MAX_RETRIES) {
-          // If it's not network error or max retries reached, throw
-          throw err;
+          // Normalize error to always return a message
+          const message =
+            err.response?.data?.errors?.message || err.response?.statusText || err.message;
+
+            console.log("error   ", message)
+          throw new Error(message);
         }
   
         // Exponential backoff for network errors
@@ -79,6 +83,6 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
       }
     }
   
-    throw new Error('Max retries reached for network errors');
+    throw new Error("Max retries reached for network errors");
   }
   

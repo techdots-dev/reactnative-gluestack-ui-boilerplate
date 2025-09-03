@@ -77,6 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Save user data if provided
       if (userData) {
+
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
         setUser(userData);
       }
@@ -86,7 +87,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoggedIn(true);
       
     } catch (error) {
-      console.error('Error during login:', error);
       throw error;
     }
   };

@@ -6,7 +6,7 @@ interface LoadingContextType {
   hideLoading: () => void;
 }
 
-const LoadingContext = createContext<LoadingContextType>({
+export const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
   hideLoading: () => {},

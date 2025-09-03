@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { USER_KEY } from "@/src/contexts/AuthContext";
+import { useAuth, USER_KEY } from "@/src/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define the User interface
@@ -14,6 +14,7 @@ interface User {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const {logout} = useAuth()
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +51,7 @@ export default function ProfileScreen() {
       <View className="flex-1 items-center justify-center bg-white p-4">
         <Text className="text-gray-500">No user data found</Text>
         <TouchableOpacity
-          onPress={() => router.push("/(auth)/login")}
+          onPress={logout}
           className="bg-blue-500 px-6 py-3 rounded-lg mt-4"
         >
           <Text className="text-white text-center font-semibold">Go to Login</Text>
@@ -67,7 +68,7 @@ export default function ProfileScreen() {
         }}
         className="w-24 h-24 rounded-full mb-4"
       />
-      <Text className="text-lg font-bold mb-1">{currentUser.name}</Text>
+      <Text testID="user-name" className="text-lg font-bold mb-1">{currentUser.name}</Text>
       <Text className="text-gray-500 mb-4">{currentUser.email}</Text>
 
       <TouchableOpacity

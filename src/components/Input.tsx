@@ -8,9 +8,10 @@ type Props = {
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
   type?: InputModeOptions;
+  testID?: string;
 };
 
-export const Input = ({ placeholder, value, onChangeText, secureTextEntry, type }: Props) => {
+export const Input = ({ placeholder, value, onChangeText, secureTextEntry, type, testID }: Props) => {
   return (
     <GSInput className="w-full my-2 border border-gray-300 rounded-lg">
       <InputField
@@ -20,6 +21,7 @@ export const Input = ({ placeholder, value, onChangeText, secureTextEntry, type 
         secureTextEntry={secureTextEntry}
         inputMode={type}
         className="px-3 py-2 text-base"
+        testID={testID}
       />
     </GSInput>
   );

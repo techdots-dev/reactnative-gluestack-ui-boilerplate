@@ -68,7 +68,7 @@ export const useAuthApi = () => {
         const data = await apiRequest<any>({
           url: "/users/forgot-password",
           method: "POST",
-          data: { email },
+          data: { user: {email} },
         });
         return { success: true, data };
       } catch (err: any) {

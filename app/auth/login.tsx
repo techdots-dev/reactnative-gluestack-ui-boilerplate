@@ -8,28 +8,36 @@ import { useAuthApi } from "@/src/api/auth";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("Testtech5005@gmail.com");
+  const [password, setPassword] = useState("1234567");
   const router = useRouter();
-  const {login} = useAuthApi()
-  const {storeUser} = useAuth()
+  const {login} = useAuthApi();
+  const {storeUser} = useAuth();
 
   const handleLogin = async () => {
     try {
-      const res = await login(email, password);
-      if(res?.success) {
-        storeUser(res?.data?.token, res?.data?.user)
+      const res = await login(email?.trim()?.toLowerCase(), password);
+      if (res?.success) {
+        const token = res?.data?.token ?? res?.data?.jwt;
+        const user = res?.data?.user ?? {
+          name: "Real User",
+          email: "realuser@gmail.com",
+        };
+        storeUser(token, user);
+      } else {
+        console.warn("Login failed:", res);
       }
     } catch (err: any) {
-      console.log(err.message);
+      console.error("Login error:", err?.response?.data?.message || err.message || err);
     }
+    
   };
 
   return (
     <AuthLayout title="Login">
-      <Input placeholder="Email" value={email} onChangeText={setEmail} />
-      <Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Login" onPress={handleLogin} />
+      <Input placeholder="Email" value={email} onChangeText={setEmail} testID="username-input"/>
+      <Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry testID="password-input" />
+      <Button title="Login" onPress={handleLogin} testID="login-button" />
 
       <TouchableOpacity onPress={() => router.push("/auth/forgot-password")}>
         <Text className="text-blue-600 mt-4 text-center">Forgot Password?</Text>
