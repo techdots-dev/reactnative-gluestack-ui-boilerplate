@@ -1,4 +1,9 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,20 +19,26 @@ const axiosClient: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 // Add auth token automatically
-axiosClient.interceptors.request.use(async (config: AxiosRequestConfig) => {
-  const token = await AsyncStorage.getItem('access_token');
-  if (token && config.headers) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+axiosClient.interceptors.request.use(
+  async (config: RetryableRequestConfig) => {
+    const token = await AsyncStorage.getItem('access_token');
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
   }
-  return config;
-});
+);
 
 // Response interceptor: refresh token on 401
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as RetryableRequestConfig;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = await AsyncStorage.getItem('refresh_token');

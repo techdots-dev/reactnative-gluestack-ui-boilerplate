@@ -16,7 +16,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      const res = await login(email, password);
+      const res = await login(email?.toLowerCase(), password);
       if(res?.success) {
         storeUser(res?.data?.token, res?.data?.user)
       }

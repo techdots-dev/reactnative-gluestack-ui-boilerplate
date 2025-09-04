@@ -11,6 +11,8 @@ import { AuthProvider } from "@/src/contexts/AuthContext";
 import { SafeAreaView } from "@gluestack-ui/themed";
 import { useEffect, useState } from "react";
 import { initPosthog } from "@/src/hooks/provider/posthog";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/src/api/queryClient";
 
 const { SENTRY_DSN } = Constants.expoConfig?.extra || {};
 
@@ -53,12 +55,14 @@ function Providers({ children }: { children: React.ReactNode }) {
 
 export default Sentry.wrap(function RootLayout() {
   return (
-    <AuthProvider>
-      <Providers>
-        <SafeAreaView className="flex-1">
-          <Slot screenOptions={{ headerShown: false }}/>
-        </SafeAreaView>
-      </Providers>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Providers>
+          <SafeAreaView className="flex-1">
+            <Slot screenOptions={{ headerShown: false }} />
+          </SafeAreaView>
+        </Providers>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 });
