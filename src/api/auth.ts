@@ -1,27 +1,12 @@
-import Constants from "expo-constants";
 import { useLoading } from "../contexts/LoadingContext";
 import { apiRequest } from "./client";
 import { useMutation } from "@tanstack/react-query";
-
-const { API_MODE } = Constants.expoConfig?.extra || {};
 
 export const useAuthApi = () => {
   const { showLoading, hideLoading } = useLoading();
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      if (API_MODE === "mock") {
-        if (email === "test@example.com" && password === "123456") {
-          return {
-            success: true,
-            data: {
-              token: "mock-token-123",
-              user: { name: "Mock User", email: "test@example.com" },
-            },
-          };
-        }
-        return { success: false, message: "Invalid credentials (mock)" };
-      }
       try {
         const data = await apiRequest<any>({
           url: "/users/tokens",
@@ -47,17 +32,6 @@ export const useAuthApi = () => {
       email: string;
       password: string;
     }) => {
-      if (API_MODE === "mock") {
-        if (name && email && password)
-          return {
-            success: true,
-            data: {
-              token: "mock-signup-token",
-              user: { name: "Mock User", email: "test@example.com" },
-            },
-          };
-        return { success: false, message: "Missing required fields (mock)" };
-      }
       try {
         const data = await apiRequest<any>({
           url: "/users",
@@ -75,14 +49,6 @@ export const useAuthApi = () => {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async ({ email }: { email: string }) => {
-      if (API_MODE === "mock") {
-        if (email === "test@example.com")
-          return {
-            success: true,
-            data: { message: "Password reset link sent (mock)" },
-          };
-        return { success: false, message: "Email not found (mock)" };
-      }
       try {
         const data = await apiRequest<any>({
           url: "/users/forgot-password",

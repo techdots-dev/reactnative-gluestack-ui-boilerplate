@@ -7,7 +7,7 @@ import axios, {
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { API_URL } = Constants.expoConfig?.extra || {};
+const { API_URL, API_MODE } = Constants.expoConfig?.extra || {};
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // start delay in ms
 
@@ -21,6 +21,48 @@ const axiosClient: AxiosInstance = axios.create({
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
+}
+
+type MockHandler = (config: AxiosRequestConfig) => any | Promise<any>;
+
+// Simple in-app mock handlers for API routes
+const mockHandlers: Record<string, MockHandler> = {
+  'POST /users/tokens': async (config) => {
+    const { email, password } = (config.data as any)?.auth || {};
+    if (email === 'test@example.com' && password === '123456') {
+      return {
+        token: 'mock-token-123',
+        user: { name: 'Mock User', email },
+      };
+    }
+    throw new Error('Invalid credentials (mock)');
+  },
+  'POST /users': async (config) => {
+    const { name, email, password } = (config.data as any)?.user || {};
+    if (name && email && password) {
+      return {
+        token: 'mock-signup-token',
+        user: { name, email },
+      };
+    }
+    throw new Error('Missing required fields (mock)');
+  },
+  'POST /users/forgot-password': async (config) => {
+    const { email } = (config.data as any) || {};
+    if (email === 'test@example.com') {
+      return { message: 'Password reset link sent (mock)' };
+    }
+    throw new Error('Email not found (mock)');
+  },
+};
+
+async function mockRequest<T>(config: AxiosRequestConfig): Promise<T> {
+  const key = `${(config.method || 'GET').toUpperCase()} ${config.url}`;
+  const handler = mockHandlers[key];
+  if (!handler) {
+    throw new Error(`No mock handler for ${key}`);
+  }
+  return handler(config);
 }
 
 // Add auth token automatically
@@ -67,6 +109,9 @@ axiosClient.interceptors.response.use(
 
 // Generic request with retries
 export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
+    if (API_MODE === 'mock') {
+      return mockRequest<T>(config);
+    }
     let attempt = 0;
   
     while (attempt < MAX_RETRIES) {
