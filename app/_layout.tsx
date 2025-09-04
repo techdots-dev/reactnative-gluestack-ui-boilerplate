@@ -10,6 +10,7 @@ import { GlobalLoader } from "@/src/components/GlobalLoader";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { SafeAreaView } from "@gluestack-ui/themed";
 import { useEffect, useState } from "react";
+import { useOTAUpdates } from "@/src/hooks/useOTAUpdates";
 import { initPosthog } from "@/src/hooks/provider/posthog";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/src/api/queryClient";
@@ -54,6 +55,7 @@ function Providers({ children }: { children: React.ReactNode }) {
 }
 
 export default Sentry.wrap(function RootLayout() {
+  useOTAUpdates();
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

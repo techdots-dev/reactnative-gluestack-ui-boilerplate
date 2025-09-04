@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "DARK_MODE=media expo start --android",
     "ios": "DARK_MODE=media expo start --ios",
-    "web": "DARK_MODE=media expo start --web"
+    "web": "DARK_MODE=media expo start --web",
+    "release:staging": "eas update --channel staging --message 'Release to staging'",
+    "release:prod": "eas update --channel production --message 'Release to production'",
+    "rollback:staging": "eas channel:edit staging --branch staging",
+    "rollback:prod": "eas channel:edit production --branch production"
   },
   "dependencies": {
     "@gluestack-style/react": "^1.0.57",
