@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 
-// Force load .env.example
-const envPath = path.resolve(__dirname, '.env.example');
+// Force load .env
+const envPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: envPath });
 }
