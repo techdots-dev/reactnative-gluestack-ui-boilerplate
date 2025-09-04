@@ -1,25 +1,38 @@
-import React, { useState } from "react";
+import React from "react";
 import { Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { z } from "zod";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthLayout } from "@/src/components/AuthLayout";
 import { Input } from "@/src/components/Input";
 import { Button } from "@/src/components/Button";
 import { useAuthApi } from "@/src/api/auth";
 import { useAuth } from "@/src/contexts/AuthContext";
 
-export default function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const router = useRouter();
-  const {signup} = useAuthApi()
-  const {storeUser} = useAuth()
+const signupSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
-  const handleSignup = async () => {
+type SignupForm = z.infer<typeof signupSchema>;
+
+export default function Signup() {
+  const router = useRouter();
+  const { signup } = useAuthApi();
+  const { storeUser } = useAuth();
+
+  const { control, handleSubmit } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { name: "", email: "", password: "" },
+  });
+
+  const handleSignup = async (data: SignupForm) => {
     try {
-      const res = await signup(name, email, password);
-      if(res?.success) {
-        storeUser(res?.data?.token, res?.data?.user)
+      const res = await signup(data.name, data.email, data.password);
+      if (res?.success) {
+        storeUser(res?.data?.token, res?.data?.user);
       }
     } catch (err: any) {
       console.log(err.message);
@@ -28,10 +41,48 @@ export default function Signup() {
 
   return (
     <AuthLayout title="Sign Up">
-      <Input placeholder="Name" value={name} onChangeText={setName} />
-      <Input placeholder="Email" value={email} onChangeText={setEmail} />
-      <Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Create Account" onPress={handleSignup} />
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
+          <Input
+            placeholder="Name"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            errorMessage={error?.message}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="email"
+        render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
+          <Input
+            placeholder="Email"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            type="email"
+            errorMessage={error?.message}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
+          <Input
+            placeholder="Password"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            secureTextEntry
+            errorMessage={error?.message}
+          />
+        )}
+      />
+      <Button title="Create Account" onPress={handleSubmit(handleSignup)} />
 
       <TouchableOpacity onPress={() => router.back()}>
         <Text className="text-gray-600 mt-4 text-center">
