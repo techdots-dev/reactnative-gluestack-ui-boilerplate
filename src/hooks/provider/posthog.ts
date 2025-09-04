@@ -1,4 +1,4 @@
-// src/providers/posthog.ts
+// src/hooks/provider/posthog.ts
 import { PostHog } from "posthog-react-native";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +18,14 @@ export const getSessionReplayPreference = async (): Promise<boolean> => {
   }
 };
 
+export const setSessionReplayPreference = async (enabled: boolean): Promise<void> => {
+  try {
+    await AsyncStorage.setItem("sessionReplayEnabled", enabled ? "true" : "false");
+  } catch (error) {
+    console.error("Error saving session replay preference:", error);
+  }
+};
+
 export const initPosthog = async (): Promise<PostHog> => {
   if (posthog) {
     // already initialized, return existing instance
@@ -32,15 +40,13 @@ export const initPosthog = async (): Promise<PostHog> => {
   initializing = (async () => {
     const enableSessionReplay = await getSessionReplayPreference();
 
-    console.log("session replay    ", enableSessionReplay)
-
     posthog = new PostHog(POSTHOG_KEY, {
       host: "https://us.i.posthog.com",
       enableSessionReplay,
       defaultOptIn: false,
     });
 
-    posthog.optIn()
+    posthog.optIn();
 
     return posthog;
   })();
