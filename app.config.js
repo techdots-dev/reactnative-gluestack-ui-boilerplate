@@ -10,6 +10,12 @@ if (fs.existsSync(envPath)) {
 
 export default ({ config }) => ({
   ...config,
+  updates: {
+    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`,
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   extra: {
     POSTHOG_KEY: process.env.POSTHOG_KEY,
     SENTRY_DSN: process.env.SENTRY_DSN,

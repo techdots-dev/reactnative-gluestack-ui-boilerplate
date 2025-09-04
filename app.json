@@ -29,6 +29,7 @@
     },
     "plugins": [
       "expo-localization",
+      "expo-updates",
       [
         "@sentry/react-native/expo",
         {
