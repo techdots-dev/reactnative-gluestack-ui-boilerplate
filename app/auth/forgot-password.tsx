@@ -25,8 +25,8 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout title="Forgot Password">
-      <Input placeholder="Enter your email" value={email} type="email" onChangeText={setEmail} />
-      <Button title="Reset Password" onPress={handleForgotPassword} />
+      <Input placeholder="Enter your email" value={email} type="email" onChangeText={setEmail} testID="email-input"/>
+      <Button title="Reset Password" onPress={handleForgotPassword} testID="forgot-password-button"/>
 
       <TouchableOpacity onPress={() => router.back()}>
         <Text className="text-blue-600 mt-4 text-center">Back to Login</Text>
