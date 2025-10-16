@@ -54,6 +54,7 @@ export default function Login() {
             onBlur={onBlur}
             errorMessage={error?.message}
             type="email"
+            testID="emailInput"
           />
         )}
       />
@@ -68,10 +69,11 @@ export default function Login() {
             onBlur={onBlur}
             secureTextEntry
             errorMessage={error?.message}
+            testID="passwordInput"
           />
         )}
       />
-      <Button title="Login" onPress={handleSubmit(handleLogin)} />
+      <Button title="Login" onPress={handleSubmit(handleLogin)} testID="loginButton" />
 
       <TouchableOpacity onPress={() => router.push("/auth/forgot-password")}>
         <Text className="text-blue-600 mt-4 text-center">Forgot Password?</Text>

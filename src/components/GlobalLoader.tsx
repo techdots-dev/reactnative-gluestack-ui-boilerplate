@@ -15,7 +15,7 @@ export const GlobalLoader = () => {
           backgroundColor: "rgba(0,0,0,0.3)",
         }}
       >
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator testID="global-loader" size="large" color="#fff" />
       </View>
     </Modal>
   );
