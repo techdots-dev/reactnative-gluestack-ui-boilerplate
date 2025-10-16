@@ -73,6 +73,7 @@ export default function ProfileScreen() {
       <TouchableOpacity
         onPress={() => router.push("/app/settings")}
         className="bg-blue-500 px-6 py-3 rounded-lg"
+        testID="settingsButton"
       >
         <Text className="text-white text-center font-semibold">Go to Settings</Text>
       </TouchableOpacity>

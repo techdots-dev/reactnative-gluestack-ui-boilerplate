@@ -84,6 +84,7 @@ export default function SettingsScreen() {
       <TouchableOpacity
         onPress={logout}
         className="bg-red-500 px-6 py-3 rounded-lg mt-6"
+        testID="logoutButton"
       >
         <Text className="text-white text-center font-semibold">Sign Out</Text>
       </TouchableOpacity>

@@ -10,6 +10,7 @@ type Props = {
   secureTextEntry?: boolean;
   type?: InputModeOptions;
   errorMessage?: string;
+  testID?: string;
 };
 
 export const Input = ({
@@ -20,6 +21,7 @@ export const Input = ({
   type,
   onBlur,
   errorMessage,
+  testID,
 }: Props) => {
   const borderClass = errorMessage ? "border-red-500" : "border-gray-300";
   return (
@@ -33,6 +35,7 @@ export const Input = ({
           inputMode={type}
           className="px-3 py-2 text-base"
           onBlur={onBlur}
+          testID={testID}
         />
       </GSInput>
       {errorMessage && (
