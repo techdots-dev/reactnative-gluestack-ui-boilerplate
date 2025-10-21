@@ -43,15 +43,15 @@ jobs:
         adb start-server
         echo "ADB server reset"
 
-    - name: Start Android Emulator (ARM64 for Apple Silicon)
+    - name: Start Android Emulator (Simplest)
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 33
-        target: google_apis
-        arch: arm64-v8a
+        api-level: 30
+        target: default
+        arch: x86_64
         profile: pixel_4
-        force-avd-creation: true
-        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        force-avd-creation: false
+        emulator-options: -no-window -gpu off -noaudio -no-boot-anim
         disable-animations: true
         emulator-boot-timeout: 300
 
