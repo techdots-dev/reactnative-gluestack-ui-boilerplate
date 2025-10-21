@@ -37,6 +37,27 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: Start Android Emulator (Boot Test Only)
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+          api-level: 33
+          arch: x86_64
+          profile: pixel_4
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            echo "🟡 Waiting for emulator to boot..."
+            adb wait-for-device
+            boot_completed=""
+            while [ -z "$boot_completed" ]; do
+              boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+              sleep 2
+              echo "⏳ Still waiting..."
+            done
+            echo "✅ Emulator boot completed successfully!"
+            adb shell getprop ro.product.model
+
     - name: Build Android APK with Safe Environment
       run: |
         # Set safe environment variables that won't crash the app
@@ -51,14 +72,14 @@ jobs:
         npx expo prebuild --platform android
         cd android && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease -Psentry.disable=true
 
-    - name: Start Android Emulator
-      uses: reactivecircus/android-emulator-runner@v2
-      with:
-        api-level: 33
-        arch: x86_64
-        profile: pixel_4
-        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-        disable-animations: false
+    # - name: Start Android Emulator
+    #   uses: reactivecircus/android-emulator-runner@v2
+    #   with:
+    #     api-level: 33
+    #     arch: x86_64
+    #     profile: pixel_4
+    #     emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+    #     disable-animations: false
 
     - name: Install APK
       run: |
