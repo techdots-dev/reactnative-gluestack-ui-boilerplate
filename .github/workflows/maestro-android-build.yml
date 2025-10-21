@@ -37,24 +37,24 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Manual Emulator Setup
+    - name: Manual Emulator Setup (ARM64 for macOS)
       run: |
-        # Install platform tools and emulator
+        # Install ARM64 system image for Apple Silicon
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "emulator"
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;default;x86_64"
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;arm64-v8a"
         
-        # Create AVD with proper parameters
+        # Create AVD with ARM64
         echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
           -n test \
-          -k "system-images;android-30;default;x86_64" \
+          -k "system-images;android-33;google_apis;arm64-v8a" \
           -d "pixel_4" \
           -f
         
         # Verify AVD was created
         $ANDROID_HOME/emulator/emulator -list-avds
-        echo "AVD created successfully"
+        echo "ARM64 AVD created successfully"
         
-        # Start emulator with proper paths
+        # Start ARM64 emulator
         $ANDROID_HOME/emulator/emulator \
           -avd test \
           -no-window \
@@ -65,7 +65,7 @@ jobs:
           -cores 2 &
         
         # Wait for boot
-        echo "Waiting for emulator to start..."
+        echo "Waiting for ARM64 emulator to start..."
         $ANDROID_HOME/platform-tools/adb wait-for-device
         
         echo "Waiting for emulator to boot completely..."
@@ -74,7 +74,7 @@ jobs:
           echo "Still booting..."
         done
         
-        echo "Emulator fully booted and ready!"
+        echo "ARM64 Emulator fully booted and ready!"
 
     - name: Build Android APK with Safe Environment
       run: |
