@@ -1,0 +1,68 @@
+name: Maestro E2E Tests (Local Build)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install
+
+    - name: Install Maestro
+      run: |
+        curl -Ls "https://get.maestro.mobile.dev" | bash
+        export PATH="$PATH:$HOME/.maestro/bin"
+        echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+    - name: Build Android APK locally
+      run: |
+        # Build the APK using Expo CLI (free)
+        npx expo prebuild --platform android
+        cd android && ./gradlew assembleRelease --no-daemon
+        cd ..
+        cp android/app/build/outputs/apk/release/app-release.apk ./app.apk
+
+    - name: Start Android Emulator
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 33
+        arch: x86_64
+        profile: pixel_4
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+
+    - name: Install APK
+      run: |
+        adb wait-for-device
+        adb install app.apk
+
+    - name: Run Maestro Tests
+      run: |
+        maestro test .maestro/auth_flow.yaml --format junit --output results.xml
+      env:
+        MAESTRO_APP_ID: com.zeeshantechdots.myapp
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          results.xml
+          .maestro/**/*.png

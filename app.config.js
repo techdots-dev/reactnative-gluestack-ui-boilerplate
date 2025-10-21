@@ -10,6 +10,8 @@ if (fs.existsSync(envPath)) {
 
 export default ({ config }) => ({
   ...config,
+  name: "gluestack-ui-boilerplate",
+  slug: "gluestack-ui-boilerplate", 
   updates: {
     url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`,
   },
@@ -26,4 +28,15 @@ export default ({ config }) => ({
         projectId: process.env.EAS_PROJECT_ID,
     },
   },
+  plugins: [
+    ...(config.plugins || []),
+    [
+      'expo-build-properties',
+      {
+        android: {
+          gradlePluginVersion: '8.2.2',
+        },
+      },
+    ],
+  ],
 });

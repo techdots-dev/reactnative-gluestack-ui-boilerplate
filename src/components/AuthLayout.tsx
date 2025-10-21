@@ -1,6 +1,6 @@
-import React, { ReactNode } from "react";
-import { View, Text } from "react-native";
-import KeyboardScrollWrapper from "./KeyboardScrollWrapper";
+import React, { ReactNode } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Box, Text } from '@gluestack-ui/themed';
 
 type Props = {
   title: string;
@@ -9,11 +9,24 @@ type Props = {
 
 export const AuthLayout = ({ title, children }: Props) => {
   return (
-    <KeyboardScrollWrapper>
-      <View className="flex-1 justify-center px-6 bg-white">
-        <Text className="text-2xl font-bold text-center mb-6">{title}</Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
+      extraScrollHeight={20}
+      showsVerticalScrollIndicator={false}
+    >
+      <Box testID="auth-layout" flex={1} justifyContent="center" px="$6" bg="$white">
+        <Text
+          fontSize="$2xl"
+          fontWeight="$bold"
+          textAlign="center"
+          mb="$6"
+        >
+          {title}
+        </Text>
         {children}
-      </View>
-    </KeyboardScrollWrapper>
+      </Box>
+    </KeyboardAwareScrollView>
   );
 };

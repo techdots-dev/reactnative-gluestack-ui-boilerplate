@@ -1,6 +1,6 @@
-import React, { ReactNode } from "react";
-import { StyleSheet} from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import React, { ReactNode } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Box } from '@gluestack-ui/themed';
 
 type Props = {
   children: ReactNode;
@@ -17,22 +17,17 @@ const KeyboardAwareWrapper = ({
 }: Props) => {
   return (
     <KeyboardAwareScrollView
-      contentContainerStyle={[styles.container, contentContainerStyle]}
+      contentContainerStyle={contentContainerStyle}
       extraScrollHeight={extraScrollHeight}
       enableOnAndroid={enableOnAndroid}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {children}
+      <Box flexGrow={1} bg="$white" px="$0">
+        {children}
+      </Box>
     </KeyboardAwareScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#fff",
-  },
-});
 
 export default KeyboardAwareWrapper;

@@ -1,28 +1,35 @@
-import "@/global.css"
+import "@/global.css";
 import { Slot } from "expo-router";
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-import { PostHogProvider } from "posthog-react-native";
-import * as Sentry from "@sentry/react-native";
+import { useEffect, useState } from "react";
 import Constants from "expo-constants";
-import { useScreenTracking } from "@/src/hooks/useScreenTracking";  
+import * as Sentry from "@sentry/react-native";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaView, StyledProvider } from "@gluestack-ui/themed";
+import { GluestackUIProvider } from "@gluestack-ui/themed";
+
+import { queryClient } from "@/src/api/queryClient";
+import { AuthProvider } from "@/src/contexts/AuthContext";
 import { LoadingProvider } from "@/src/contexts/LoadingContext";
 import { GlobalLoader } from "@/src/components/GlobalLoader";
-import { AuthProvider } from "@/src/contexts/AuthContext";
-import { SafeAreaView } from "@gluestack-ui/themed";
-import { useEffect, useState } from "react";
-import { useOTAUpdates } from "@/src/hooks/useOTAUpdates";
+import { PostHogProvider } from "posthog-react-native";
 import { initPosthog } from "@/src/hooks/provider/posthog";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/src/api/queryClient";
+import { useScreenTracking } from "@/src/hooks/useScreenTracking";
+import { useOTAUpdates } from "@/src/hooks/useOTAUpdates";
+import {
+  patchConsoleForErrors,
+  setupErrorTracking,
+} from "@/src/hooks/provider/errorTracking";
+import { config, gluestackUIConfig } from "@gluestack-ui/config";
+// import { gluestackConfig } from "@/src/gluestackConfig";
 
+// 🔐 Sentry Initialization
 const { SENTRY_DSN } = Constants.expoConfig?.extra || {};
-
-// Initialize Sentry
 Sentry.init({
   dsn: SENTRY_DSN,
   sendDefaultPii: true,
 });
 
+// 🌐 Providers for PostHog + Gluestack + Global Loading
 function Providers({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<null | any>(null);
 
@@ -30,21 +37,23 @@ function Providers({ children }: { children: React.ReactNode }) {
     (async () => {
       const instance = await initPosthog();
       setClient(instance);
+      setupErrorTracking();
+      patchConsoleForErrors();
     })();
-  }, []); // runs once on app reload
+  }, []);
 
-  useScreenTracking(client); // 📊 manual PostHog screen tracking
+  useScreenTracking(client);
 
-  if (!client) return null; // or splash/loading UI
+  if (!client) return null; // ⏳ can be replaced with a splash screen
 
   return (
     <PostHogProvider
       client={client}
       autocapture={{
-        captureScreens: false, // 🚨 prevent useNavigation crash
+        captureScreens: false, // 🚨 avoids useNavigation crash
       }}
     >
-      <GluestackUIProvider mode="light">
+      <GluestackUIProvider colorMode="light" config={config}>
         <LoadingProvider>
           {children}
           <GlobalLoader />
@@ -54,17 +63,21 @@ function Providers({ children }: { children: React.ReactNode }) {
   );
 }
 
+// 🧭 Root Layout
 export default Sentry.wrap(function RootLayout() {
   useOTAUpdates();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Providers>
-          <SafeAreaView className="flex-1">
-            <Slot screenOptions={{ headerShown: false }} />
-          </SafeAreaView>
-        </Providers>
-      </AuthProvider>
-    </QueryClientProvider>
+    <StyledProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Providers>
+            <SafeAreaView className="flex-1">
+              <Slot screenOptions={{ headerShown: false }} />
+            </SafeAreaView>
+          </Providers>
+        </AuthProvider>
+      </QueryClientProvider>
+    </StyledProvider>
   );
 });

@@ -1,0 +1,144 @@
+appId: com.zeeshantechdots.myapp
+
+---
+
+# === PHASE 1: LOGIN & LOGOUT ===
+# Login with test credentials
+- launchApp
+# Wait for loader to finish and login form to appear
+- extendedWaitUntil:
+    visible:
+      id: "emailInput"
+    timeout: 30000  # Wait up to 30 seconds for Android to initialize
+- tapOn:
+    id: "emailInput"
+- inputText: "test@example.com"
+- tapOn:
+    id: "passwordInput"
+- inputText: "123456"
+- tapOn:
+    id: "loginButton"
+
+# Wait for login success
+- extendedWaitUntil:
+    visible:
+      id: "settingsButton"
+    timeout: 15000
+- assertVisible:
+    id: "settingsButton"
+
+# Logout
+- tapOn:
+    id: "settingsButton"
+- extendedWaitUntil:
+    visible:
+      id: "logoutButton"
+    timeout: 5000
+- tapOn:
+    id: "logoutButton"
+- extendedWaitUntil:
+    visible:
+      id: "emailInput"
+    timeout: 5000
+
+# === PHASE 2: FORGOT PASSWORD FLOW ===
+- tapOn:
+    text: "Forgot Password?"
+- extendedWaitUntil:
+    visible:
+      text: "Reset Password"
+    timeout: 5000
+
+# Fill forgot password email
+- tapOn:
+    id: "forgotPasswordInput"
+- inputText: "test@example.com"
+- tapOn:
+    text: "Reset Password"
+
+# Handle alert (OK button)
+- extendedWaitUntil:
+    visible:
+      text: "OK"
+    timeout: 5000
+- tapOn:
+    text: "OK"
+
+# Back to login
+- tapOn:
+    text: "Back to Login"
+- extendedWaitUntil:
+    visible:
+      id: "emailInput"
+    timeout: 5000
+
+# === PHASE 3: SIGNUP & BACK TO LOGIN ===
+- tapOn:
+    id: "signupLink"
+- extendedWaitUntil:
+    visible:
+      id: "signupNameInput"
+    timeout: 5000
+
+# Back to login without signing up
+- tapOn:
+    id: "loginLink"
+- extendedWaitUntil:
+    visible:
+      id: "emailInput"
+    timeout: 5000
+
+# === PHASE 4: COMPLETE SIGNUP & LOGOUT ===
+- tapOn:
+    id: "signupLink"
+- extendedWaitUntil:
+    visible:
+      id: "signupNameInput"
+    timeout: 5000
+
+# # Generate unique email for signup
+# - runScript: |
+#     const timestamp = Date.now();
+#     const uniqueEmail = "user" + timestamp + "@test.com";
+#     return { uniqueEmail };
+
+# Fill signup form
+- tapOn:
+    id: "signupNameInput"
+- inputText: "New User"
+- tapOn:
+    id: "signupEmailInput"
+- inputText: "newuser@gmail.com"
+- tapOn:
+    id: "signupPasswordInput"
+- inputText: "password123"
+- tapOn:
+    id: "signupButton"
+
+# Wait for signup to complete and land on profile/settings page
+- extendedWaitUntil:
+    visible:
+      id: "settingsButton"
+    timeout: 10000
+
+# Verify we're on profile page (same as after login)
+- assertVisible:
+    id: "settingsButton"
+
+# Final logout from the new account
+- tapOn:
+    id: "settingsButton"
+- extendedWaitUntil:
+    visible:
+      id: "logoutButton"
+    timeout: 5000
+- tapOn:
+    id: "logoutButton"
+- extendedWaitUntil:
+    visible:
+      id: "emailInput"
+    timeout: 5000
+
+# Verify we're back on login screen
+- assertVisible:
+    id: "emailInput"
