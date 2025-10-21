@@ -28,6 +28,7 @@ jobs:
     - name: Install Maestro
       run: |
         curl -Ls "https://get.maestro.mobile.dev" | bash
+        export PATH="$PATH:$HOME/.maestro/bin"
         echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
     - name: Setup Java
@@ -36,49 +37,23 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK and Emulator
+    - name: Reset ADB Server (Fix for hanging ADB)
       run: |
-        # Accept licenses first
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        
-        # Install emulator components
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "emulator"
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
-        
-        # Create AVD
-        echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
-          -n test \
-          -k "system-images;android-33;google_apis;x86_64" \
-          -d "pixel_4" \
-          -f
+        adb kill-server || true
+        adb start-server
+        echo "ADB server reset"
 
-    - name: Start Android Emulator
-      run: |
-        # Start emulator in background
-        nohup $ANDROID_HOME/emulator/emulator \
-          -avd test \
-          -port 5554 \
-          -no-window \
-          -gpu swiftshader_indirect \
-          -noaudio \
-          -no-boot-anim \
-          -camera-back none \
-          -no-snapshot \
-          -memory 2048 \
-          -cores 2 &
-        
-        # Wait for emulator to start
-        echo "Waiting for emulator to start..."
-        $ANDROID_HOME/platform-tools/adb wait-for-device
-        
-        # Wait for boot completion
-        echo "Waiting for emulator to boot..."
-        while ! $ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed | grep -q "1"; do
-          sleep 5
-          echo "Still booting..."
-        done
-        
-        echo "Emulator fully booted and ready!"
+    - name: Start Android Emulator (ARM64 for Apple Silicon)
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 33
+        target: google_apis
+        arch: arm64-v8a
+        profile: pixel_4
+        force-avd-creation: true
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
+        emulator-boot-timeout: 300
 
     - name: Build Android APK with Safe Environment
       run: |
@@ -93,15 +68,6 @@ jobs:
         # Build the APK
         npx expo prebuild --platform android
         cd android && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease -Psentry.disable=true
-
-    # - name: Start Android Emulator
-    #   uses: reactivecircus/android-emulator-runner@v2
-    #   with:
-    #     api-level: 33
-    #     arch: x86_64
-    #     profile: pixel_4
-    #     emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-    #     disable-animations: false
 
     - name: Install APK
       run: |
