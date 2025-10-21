@@ -9,7 +9,7 @@ on:
 jobs:
   e2e-tests:
     name: Run E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     
     steps:
     - name: Checkout code
@@ -43,18 +43,38 @@ jobs:
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "emulator"
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;default;x86_64"
         
-        # Create AVD
-        echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-30;default;x86_64" -d "pixel_4" -f
+        # Create AVD with proper parameters
+        echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
+          -n test \
+          -k "system-images;android-30;default;x86_64" \
+          -d "pixel_4" \
+          -f
         
-        # Start emulator
-        $ANDROID_HOME/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect &
+        # Verify AVD was created
+        $ANDROID_HOME/emulator/emulator -list-avds
+        echo "AVD created successfully"
+        
+        # Start emulator with proper paths
+        $ANDROID_HOME/emulator/emulator \
+          -avd test \
+          -no-window \
+          -no-audio \
+          -no-boot-anim \
+          -gpu swiftshader_indirect \
+          -memory 2048 \
+          -cores 2 &
         
         # Wait for boot
+        echo "Waiting for emulator to start..."
         $ANDROID_HOME/platform-tools/adb wait-for-device
+        
+        echo "Waiting for emulator to boot completely..."
         while ! $ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed | grep -q "1"; do
           sleep 5
+          echo "Still booting..."
         done
-        echo "Emulator ready"
+        
+        echo "Emulator fully booted and ready!"
 
     - name: Build Android APK with Safe Environment
       run: |
