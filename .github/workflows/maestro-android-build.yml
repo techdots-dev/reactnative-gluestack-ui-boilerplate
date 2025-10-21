@@ -37,12 +37,6 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Reset ADB Server (Fix for hanging ADB)
-      run: |
-        adb kill-server || true
-        adb start-server
-        echo "ADB server reset"
-
     - name: Start Android Emulator (Simplest)
       uses: reactivecircus/android-emulator-runner@v2
       with:
