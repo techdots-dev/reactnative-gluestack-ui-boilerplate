@@ -49,7 +49,7 @@ jobs:
         
         # Build the APK
         npx expo prebuild --platform android
-        cd android && ./gradlew assembleRelease -Dsentry.skip=true
+        cd android && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease -Psentry.disable=true
 
     - name: Start Android Emulator
       uses: reactivecircus/android-emulator-runner@v2
