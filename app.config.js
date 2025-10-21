@@ -2,30 +2,32 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 
-// Force load .env
-const envPath = path.resolve(__dirname, '.env');
+// Force load .env explicitly
+const envPath = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: envPath });
+} else {
+  console.warn('.env file not found at:', envPath);
 }
 
 export default ({ config }) => ({
   ...config,
   name: "gluestack-ui-boilerplate",
   slug: "gluestack-ui-boilerplate", 
-  updates: {
+  ...(process.env?.EAS_PROJECT_ID && { updates: {
     url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`,
-  },
+  }}),
   runtimeVersion: {
     policy: 'appVersion',
   },
   extra: {
-    POSTHOG_KEY: process.env.POSTHOG_KEY,
-    SENTRY_DSN: process.env.SENTRY_DSN,
-    SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    POSTHOG_KEY: process.env.POSTHOG_KEY ?? "",
+    SENTRY_DSN: process.env.SENTRY_DSN ?? "",
+    SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN ?? "",
     API_MODE: process.env.API_MODE ?? 'mock',
-    API_URL: process.env.API_URL,
+    API_URL: process.env.API_URL ?? "",
     eas: {
-        projectId: process.env.EAS_PROJECT_ID,
+        projectId: process.env.EAS_PROJECT_ID ?? "",
     },
   },
   plugins: [

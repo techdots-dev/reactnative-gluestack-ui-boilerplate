@@ -31,13 +31,25 @@ jobs:
         export PATH="$PATH:$HOME/.maestro/bin"
         echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-    - name: Build Android APK locally
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Build Android APK with Safe Environment
       run: |
-        # Build the APK using Expo CLI (free)
+        # Set safe environment variables that won't crash the app
+        export POSTHOG_KEY=""
+        export SENTRY_DSN=""
+        export SENTRY_AUTH_TOKEN=""
+        export API_MODE="mock"
+        export API_URL="https://jsonplaceholder.typicode.com"
+        export EAS_PROJECT_ID=""
+        
+        # Build the APK
         npx expo prebuild --platform android
-        cd android && ./gradlew assembleRelease --no-daemon
-        cd ..
-        cp android/app/build/outputs/apk/release/app-release.apk ./app.apk
+        cd android && ./gradlew assembleRelease -Dsentry.skip=true
 
     - name: Start Android Emulator
       uses: reactivecircus/android-emulator-runner@v2
@@ -46,15 +58,22 @@ jobs:
         arch: x86_64
         profile: pixel_4
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+        disable-animations: false
 
     - name: Install APK
       run: |
         adb wait-for-device
-        adb install app.apk
+        adb install android/app/build/outputs/apk/release/app-release.apk
+        echo "APK installed successfully"
+
+    - name: Wait for app to be ready
+      run: |
+        # Wait for emulator to be fully ready
+        adb shell sleep 10
 
     - name: Run Maestro Tests
       run: |
-        maestro test .maestro/auth_flow.yaml --format junit --output results.xml
+        maestro test .maestro/ --format junit --output results.xml
       env:
         MAESTRO_APP_ID: com.zeeshantechdots.myapp
 
@@ -66,3 +85,19 @@ jobs:
         path: |
           results.xml
           .maestro/**/*.png
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Maestro Test Results
+        path: results.xml
+        reporter: java-junit
+
+    - name: Upload APK for debugging
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: built-apk
+        path: android/app/build/outputs/apk/release/app-release.apk
+        retention-days: 1

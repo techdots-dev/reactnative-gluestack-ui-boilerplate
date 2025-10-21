@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const { POSTHOG_KEY } = Constants.expoConfig?.extra || {};
 
 let posthog: PostHog | null = null;
-let initializing: Promise<PostHog> | null = null; // prevent race conditions
+let initializing: Promise<PostHog> | null = null;
 
 // Storage keys
 const ANALYTICS_KEY = "analyticsEnabled";
@@ -15,7 +15,7 @@ const SESSION_REPLAY_KEY = "sessionReplayEnabled";
 export const getAnalyticsPreference = async (): Promise<boolean> => {
   try {
     const preference = await AsyncStorage.getItem(ANALYTICS_KEY);
-    return preference !== "false"; // default true
+    return preference !== "false";
   } catch (error) {
     console.error("Error reading analytics preference:", error);
     return true;
@@ -33,7 +33,7 @@ export const setAnalyticsPreference = async (enabled: boolean): Promise<void> =>
 export const getSessionReplayPreference = async (): Promise<boolean> => {
   try {
     const preference = await AsyncStorage.getItem(SESSION_REPLAY_KEY);
-    return preference === "true"; // default false
+    return preference === "true";
   } catch (error) {
     console.error("Error reading session replay preference:", error);
     return false;
@@ -50,40 +50,61 @@ export const setSessionReplayPreference = async (enabled: boolean): Promise<void
 
 export const initPosthog = async (): Promise<PostHog> => {
   if (posthog) {
-    // already initialized, return existing instance
     return posthog;
   }
 
   if (initializing) {
-    // another call is in progress — wait for it
     return initializing;
   }
 
   initializing = (async () => {
-    const [enableSessionReplay, enableAnalytics] = await Promise.all([
-      getSessionReplayPreference(),
-      getAnalyticsPreference(),
-    ]);
+    try {
+      // Check if PostHog key is valid - if not, throw error to be caught below
+      if (!POSTHOG_KEY || POSTHOG_KEY === '' || POSTHOG_KEY.includes('mock')) {
+        throw new Error('PostHog disabled - invalid key');
+      }
 
-    posthog = new PostHog(POSTHOG_KEY, {
-      host: "https://us.i.posthog.com",
-      enableSessionReplay,
-      defaultOptIn: false,
-    });
+      const [enableSessionReplay, enableAnalytics] = await Promise.all([
+        getSessionReplayPreference(),
+        getAnalyticsPreference(),
+      ]);
 
-    // Respect analytics preference
-    if (enableAnalytics) {
-      posthog.optIn();
-    } else {
-      posthog.optOut();
+      const instance = new PostHog(POSTHOG_KEY, {
+        host: "https://us.i.posthog.com",
+        enableSessionReplay,
+        defaultOptIn: false,
+      });
+
+      if (enableAnalytics) {
+        instance.optIn();
+      } else {
+        instance.optOut();
+      }
+
+      posthog = instance;
+      return posthog;
+    } catch (error) {
+      console.error("Failed to initialize PostHog:", error);
+      // Create a mock PostHog instance that has captureException method
+      const mockPostHog = {
+        capture: () => {},
+        captureException: () => {},
+        identify: () => {},
+        reset: () => {},
+        optIn: () => {},
+        optOut: () => {},
+        debug: () => {}, // Add this method
+        // Add any other methods your app uses
+      } as any as PostHog;
+      
+      posthog = mockPostHog;
+      return posthog;
+    } finally {
+      initializing = null;
     }
-
-    return posthog;
   })();
 
   return initializing;
 };
 
-// Consumers should always `await initPosthog()`
-// No default export of `null` to avoid confusion
 export { posthog };
