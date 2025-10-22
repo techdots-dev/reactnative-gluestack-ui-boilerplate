@@ -9,7 +9,7 @@ appId: com.zeeshantechdots.myapp
 - extendedWaitUntil:
     visible:
       id: "emailInput"
-    timeout: 30000  # Wait up to 30 seconds for Android to initialize
+    timeout: 90000  # Wait up to 90 seconds
 - tapOn:
     id: "emailInput"
 - inputText: "test@example.com"
