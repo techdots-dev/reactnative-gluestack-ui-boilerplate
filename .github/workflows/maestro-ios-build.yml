@@ -46,7 +46,7 @@ jobs:
         xcrun simctl boot "iPhone 16 Pro Max"
         xcrun simctl list devices booted
 
-    - name: Build and Install iOS App with Metro
+    - name: Prebuild Expo iOS Project
       run: |
         export POSTHOG_KEY=""
         export SENTRY_DSN=""
@@ -55,15 +55,16 @@ jobs:
         export API_URL="https://jsonplaceholder.typicode.com"
         export EAS_PROJECT_ID=""
         export SENTRY_DISABLE_AUTO_UPLOAD=true
-        
-        # Prebuild iOS project
-        npx expo prebuild --platform ios
-        
-        # Install iOS dependencies
+        npx expo prebuild --platform ios --clean
+
+    - name: Install Pods
+      run: |
         cd ios
         pod install
         cd ..
-        
+
+    - name: Start Metro
+      run: |
         # Kill any existing Metro processes and start fresh
         echo "Starting Metro bundler..."
         pkill -f "expo start" || true
@@ -85,14 +86,32 @@ jobs:
             cat metro.log
             exit 1
         fi
-        
-        # Build and install the iOS app
+
+    - name: Build iOS App (Debug)
+      run: |
         cd ios
-        xcodebuild -workspace gluestackuiboilerplate.xcworkspace -scheme gluestackuiboilerplate -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' -configuration Debug build
-        xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/gluestackuiboilerplate.app
-        
-        # Keep Metro running for Maestro tests
-        echo "Metro PID: $METRO_PID"
+        xcodebuild \
+          -workspace gluestackuiboilerplate.xcworkspace \
+          -scheme gluestackuiboilerplate \
+          -configuration Debug \
+          -sdk iphonesimulator \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' \
+          -derivedDataPath build
+
+          # Keep Metro running for Maestro tests
+          echo "Metro PID: $METRO_PID"
+
+    - name: Install App on Simulator
+      run: |
+        cd ios
+        APP_PATH=$(find build/Build/Products/Debug-iphonesimulator -name "*.app" | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+           echo "❌ No .app found under build/Build/Products/Debug-iphonesimulator"
+           ls -R build/Build/Products || true
+           exit 1
+        fi
+        echo "✅ Installing $APP_PATH"
+        xcrun simctl install booted "$APP_PATH"
 
     - name: Run Maestro iOS Tests
       run: |
