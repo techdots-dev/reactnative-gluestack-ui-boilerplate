@@ -1,0 +1,81 @@
+name: Maestro E2E Tests Android (Local Build)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ios-e2e-tests:
+    name: Run iOS E2E Tests
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: |
+        yarn install
+
+    - name: Install Maestro
+      run: |
+        curl -Ls "https://get.maestro.mobile.dev" | bash
+        echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+
+    - name: Install CocoaPods
+      run: |
+        gem install cocoapods
+
+    - name: Boot iOS Simulator
+      run: |
+        xcrun simctl boot "iPhone 14"
+        xcrun simctl status "iPhone 14"
+
+    - name: Build iOS App
+      run: |
+        export POSTHOG_KEY=""
+        export SENTRY_DSN=""
+        export SENTRY_AUTH_TOKEN=""
+        export API_MODE="mock"
+        export API_URL="https://jsonplaceholder.typicode.com"
+        export EAS_PROJECT_ID=""
+        
+        npx expo prebuild --platform ios
+        
+        cd ios
+        pod install
+        xcodebuild -workspace MyApp.xcworkspace -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' -configuration Debug build-for-testing
+
+    - name: Install iOS App
+      run: |
+        cd ios
+        xcodebuild -workspace MyApp.xcworkspace -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' test-without-building
+
+    - name: Run Maestro iOS Tests
+      run: |
+        maestro test .maestro/ --format junit --output ios-results.xml
+      env:
+        MAESTRO_APP_ID: com.zeeshantechdots.myapp
+
+    - name: Upload iOS Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ios-test-results
+        path: |
+          ios-results.xml
+          .maestro/**/*.png
