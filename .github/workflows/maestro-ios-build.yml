@@ -120,12 +120,8 @@ jobs:
 
     - name: Run Maestro iOS Tests
       run: |
-        # Clean PATH to remove Android tools
-        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/Applications/Xcode.app/Contents/Developer/usr/bin"
-        
         export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000
         export MAESTRO_DRIVER_INSTALL_TIMEOUT=180000
-        
         maestro test .maestro/ --format junit --output ios-results.xml
       env:
         MAESTRO_APP_ID: com.zeeshantechdots.myapp
