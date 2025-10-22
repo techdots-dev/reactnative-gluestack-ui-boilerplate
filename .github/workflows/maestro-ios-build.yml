@@ -70,7 +70,7 @@ jobs:
         lsof -ti:8081 | xargs kill -9 || true
         
         # Start Metro in background
-        npx expo start --no-dev --minify --tunnel > metro.log 2>&1 &
+        npx expo start --no-dev --minify > metro.log 2>&1 &
         METRO_PID=$!
         
         # Wait for Metro to fully start
