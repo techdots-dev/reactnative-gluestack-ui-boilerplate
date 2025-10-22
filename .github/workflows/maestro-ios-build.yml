@@ -46,12 +46,6 @@ jobs:
         xcrun simctl boot "iPhone 16 Pro Max"
         xcrun simctl list devices booted
 
-    - name: Install Pods
-      run: |
-        cd ios
-        pod install
-        cd ..
-
     - name: Start Metro
       run: |
         # Kill any existing Metro processes and start fresh
@@ -95,6 +89,10 @@ jobs:
         export EAS_PROJECT_ID=""
         export SENTRY_DISABLE_AUTO_UPLOAD=true
         npx expo prebuild --platform ios --clean
+
+        cd ios
+        pod install
+        cd ..
 
         cd ios
         xcodebuild \
