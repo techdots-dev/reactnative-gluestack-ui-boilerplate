@@ -43,7 +43,7 @@ jobs:
     - name: Boot iOS Simulator
       run: |
         # Boot a specific available simulator
-        xcrun simctl boot "iPhone 16 Pro Max" || xcrun simctl boot "iPhone 14 Pro" || xcrun simctl boot "iPhone 13"
+        xcrun simctl boot "iPhone 16 Pro Max"
         xcrun simctl list devices booted
 
     - name: Build iOS App
@@ -59,12 +59,12 @@ jobs:
         
         cd ios
         pod install
-        xcodebuild -workspace MyApp.xcworkspace -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' -configuration Debug build-for-testing
+        xcodebuild -workspace gluestackuiboilerplate.xcworkspace -scheme gluestackuiboilerplate -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' -configuration Debug build-for-testing
 
     - name: Install iOS App
       run: |
         cd ios
-        xcodebuild -workspace MyApp.xcworkspace -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' test-without-building
+        xcodebuild -workspace gluestackuiboilerplate.xcworkspace -scheme gluestackuiboilerplate -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' test-without-building
 
     - name: Run Maestro iOS Tests
       run: |
