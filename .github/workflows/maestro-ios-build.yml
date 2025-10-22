@@ -1,4 +1,4 @@
-name: Maestro E2E Tests Android (Local Build)
+name: Maestro E2E Tests iOS (Local Build)
 
 on:
   push:
