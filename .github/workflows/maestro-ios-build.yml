@@ -46,17 +46,6 @@ jobs:
         xcrun simctl boot "iPhone 16 Pro Max"
         xcrun simctl list devices booted
 
-    - name: Prebuild Expo iOS Project
-      run: |
-        export POSTHOG_KEY=""
-        export SENTRY_DSN=""
-        export SENTRY_AUTH_TOKEN=""
-        export API_MODE="mock"
-        export API_URL="https://jsonplaceholder.typicode.com"
-        export EAS_PROJECT_ID=""
-        export SENTRY_DISABLE_AUTO_UPLOAD=true
-        npx expo prebuild --platform ios --clean
-
     - name: Install Pods
       run: |
         cd ios
@@ -87,8 +76,26 @@ jobs:
             exit 1
         fi
 
+    - name: Cache iOS Build
+      uses: actions/cache@v4
+      with:
+        path: ios/build
+        key: ${{ runner.os }}-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
     - name: Build iOS App (Debug)
+      if: steps.cache-ios-build.outputs.cache-hit != 'true'
       run: |
+        export POSTHOG_KEY=""
+        export SENTRY_DSN=""
+        export SENTRY_AUTH_TOKEN=""
+        export API_MODE="mock"
+        export API_URL="https://jsonplaceholder.typicode.com"
+        export EAS_PROJECT_ID=""
+        export SENTRY_DISABLE_AUTO_UPLOAD=true
+        npx expo prebuild --platform ios --clean
+
         cd ios
         xcodebuild \
           -workspace gluestackuiboilerplate.xcworkspace \
@@ -113,19 +120,19 @@ jobs:
         echo "✅ Installing $APP_PATH"
         xcrun simctl install booted "$APP_PATH"
 
-    - name: Launch and Verify App
-      run: |
-        # Launch app
-        (timeout 45s xcrun simctl launch booted com.zeeshantechdots.myapp && echo "Launch successful") || echo "Launch timed out/crashed"
-
-        sleep 20
-
     - name: Run Maestro iOS Tests
       run: |
-        # Run tests with Metro still running in background
+        # Clean PATH to remove Android tools
+        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/Applications/Xcode.app/Contents/Developer/usr/bin"
+        
+        export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000
+        export MAESTRO_DRIVER_INSTALL_TIMEOUT=180000
+        
         maestro test .maestro/ --format junit --output ios-results.xml
       env:
         MAESTRO_APP_ID: com.zeeshantechdots.myapp
+        MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
+        MAESTRO_DRIVER_INSTALL_TIMEOUT: 180000
 
     - name: Stop Metro Bundler
       run: |
