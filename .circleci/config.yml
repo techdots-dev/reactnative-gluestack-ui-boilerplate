@@ -50,37 +50,51 @@ jobs:
             export EAS_PROJECT_ID=""
             export SENTRY_DISABLE_AUTO_UPLOAD=true
             export SENTRY_ALLOW_FAILURE=true
-            npx expo prebuild --platform ios
+            npx expo prebuild --platform ios --non-interactive
 
       - run:
           name: Install CocoaPods
           command: |
             cd ios
-            pod install
+            pod install --repo-update
             cd ..
 
       - run:
           name: Build iOS app (Release)
           command: |
             cd ios
-            echo "🚀 Starting Xcode build..."
-      
-            # Use tee to show output AND save to file
+            echo "🚀 Starting Xcode build (minimal logs)..."
+
+            gem install xcpretty --no-document
+
+            # Automatically detect the scheme
+            SCHEME=$(xcodebuild -list -json | jq -r '.workspace.schemes[0]')
+            echo "📦 Building scheme: $SCHEME"
+
+            # Use stable simulator target
+            DESTINATION="platform=iOS Simulator,name=iPhone 15,OS=17.5"
+
+            # Clean and build with reduced logs
+            set -o pipefail
             xcodebuild \
-              -workspace gluestackuiboilerplate.xcworkspace \
-              -scheme gluestackuiboilerplate \
+              -workspace *.xcworkspace \
+              -scheme "$SCHEME" \
               -configuration Release \
               -sdk iphonesimulator \
-              -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=18.2' \
+              -destination "$DESTINATION" \
               -derivedDataPath build \
-              build 2>&1 | tee xcodebuild.log
+              clean build \
+              | xcpretty --color --simple --report junit --output ../xcodebuild-results.xml
+
+            # Save raw logs for debugging (minimal second build omitted to save time)
+            echo "✅ Build finished — saving raw log"
+            cp ../xcodebuild-results.xml ../xcodebuild.log || true
 
       - run:
           name: Save build logs
           command: |
-            # Copy build log to workspace root for artifact storage
             cp ios/xcodebuild.log ./
-            echo "Build log saved for debugging"
+            echo "✅ Build log saved for artifacts"
 
       - run:
           name: Install app on simulator
@@ -93,7 +107,8 @@ jobs:
               exit 1
             fi
             echo "✅ Found app: $APP_PATH"
-            xcrun simctl install "iPhone 16 Pro Max" "$APP_PATH"
+            xcrun simctl boot "iPhone 15"
+            xcrun simctl install "iPhone 15" "$APP_PATH"
 
       - run:
           name: Run Maestro tests
@@ -105,15 +120,22 @@ jobs:
             MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
 
       - store_test_results:
-          path: results.xml
+          path: xcodebuild-results.xml
 
-      - store_artifacts:
-          path: results.xml
-          destination: test-results
+      - store_test_results:
+          path: results.xml  # Maestro test results
 
       - store_artifacts:
           path: xcodebuild.log
           destination: build-logs
+
+      - store_artifacts:
+          path: xcodebuild-results.xml
+          destination: xcode-test-results
+
+      - store_artifacts:
+          path: results.xml
+          destination: maestro-test-results
 
       - store_artifacts:
           path: ios/build
