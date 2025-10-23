@@ -4,7 +4,8 @@ jobs:
   ios-e2e-tests:
     macos:
       xcode: "16.2.0"
-    resource_class: macos.x86.64.medium.gen2
+    # REMOVE this line: resource_class: macos.x86.64.medium.gen2
+    # CircleCI auto-assigns resource class for macOS
     steps:
       - checkout
       
@@ -14,6 +15,7 @@ jobs:
             echo "Node version: $(node --version)"
             echo "NPM version: $(npm --version)"
             xcodebuild -version
+            xcrun simctl list devices | grep -A 5 "iPhone"
 
       - restore_cache:
           keys:
@@ -29,6 +31,7 @@ jobs:
       - save_cache:
           paths:
             - node_modules
+            - ~/.cache/expo
           key: v1-dependencies-{{ checksum "package.json" }}
 
       - run:
@@ -39,7 +42,7 @@ jobs:
             echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
 
       - run:
-          name: Prebuild and build iOS app
+          name: Prebuild iOS project
           command: |
             export POSTHOG_KEY=""
             export SENTRY_DSN=""
@@ -47,26 +50,44 @@ jobs:
             export API_MODE="mock"
             export API_URL="https://jsonplaceholder.typicode.com"
             export EAS_PROJECT_ID=""
-            
             npx expo prebuild --platform ios
+
+      - run:
+          name: Install CocoaPods
+          command: |
             cd ios
             pod install
+            cd ..
+
+      - run:
+          name: Build iOS app (Release)
+          command: |
+            cd ios
             xcodebuild \
               -workspace gluestackuiboilerplate.xcworkspace \
               -scheme gluestackuiboilerplate \
               -configuration Release \
               -sdk iphonesimulator \
-              -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' \
+              -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=18.4' \
               -derivedDataPath build \
               build
 
       - run:
-          name: Install app and run Maestro tests
+          name: Install app on simulator
           command: |
             cd ios
             APP_PATH=$(find build -name "*.app" -type d | head -1)
+            if [ -z "$APP_PATH" ]; then
+              echo "❌ No .app file found"
+              find build -name "*.app" -type d
+              exit 1
+            fi
+            echo "✅ Found app: $APP_PATH"
             xcrun simctl install "iPhone 16 Pro Max" "$APP_PATH"
-            
+
+      - run:
+          name: Run Maestro tests
+          command: |
             export PATH="$HOME/.maestro/bin:$PATH"
             maestro test .maestro/ --format junit --output results.xml
           environment:
@@ -75,6 +96,10 @@ jobs:
 
       - store_test_results:
           path: results.xml
+
+      - store_artifacts:
+          path: results.xml
+          destination: test-results
 
 workflows:
   version: 2
