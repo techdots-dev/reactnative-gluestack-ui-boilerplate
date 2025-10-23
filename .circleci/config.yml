@@ -1,0 +1,83 @@
+version: 2.1
+
+jobs:
+  ios-e2e-tests:
+    macos:
+      xcode: "16.2.0"
+    resource_class: macos.x86.64.medium.gen2
+    steps:
+      - checkout
+      
+      - run:
+          name: Show environment info
+          command: |
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            xcodebuild -version
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-
+
+      - run:
+          name: Install dependencies
+          command: |
+            npm install -g yarn
+            yarn install --frozen-lockfile
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      - run:
+          name: Install Maestro
+          command: |
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+            export PATH="$HOME/.maestro/bin:$PATH"
+            echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
+
+      - run:
+          name: Prebuild and build iOS app
+          command: |
+            export POSTHOG_KEY=""
+            export SENTRY_DSN=""
+            export SENTRY_AUTH_TOKEN=""
+            export API_MODE="mock"
+            export API_URL="https://jsonplaceholder.typicode.com"
+            export EAS_PROJECT_ID=""
+            
+            npx expo prebuild --platform ios
+            cd ios
+            pod install
+            xcodebuild \
+              -workspace gluestackuiboilerplate.xcworkspace \
+              -scheme gluestackuiboilerplate \
+              -configuration Release \
+              -sdk iphonesimulator \
+              -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=latest' \
+              -derivedDataPath build \
+              build
+
+      - run:
+          name: Install app and run Maestro tests
+          command: |
+            cd ios
+            APP_PATH=$(find build -name "*.app" -type d | head -1)
+            xcrun simctl install "iPhone 16 Pro Max" "$APP_PATH"
+            
+            export PATH="$HOME/.maestro/bin:$PATH"
+            maestro test .maestro/ --format junit --output results.xml
+          environment:
+            MAESTRO_APP_ID: com.zeeshantechdots.myapp
+            MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
+
+      - store_test_results:
+          path: results.xml
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - ios-e2e-tests
