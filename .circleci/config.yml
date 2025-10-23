@@ -63,7 +63,9 @@ jobs:
           name: Build iOS app (Release)
           command: |
             cd ios
-            # Save build output to file to avoid 50MB limit
+            echo "🚀 Starting Xcode build..."
+      
+            # Use tee to show output AND save to file
             xcodebuild \
               -workspace gluestackuiboilerplate.xcworkspace \
               -scheme gluestackuiboilerplate \
@@ -71,8 +73,7 @@ jobs:
               -sdk iphonesimulator \
               -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=18.2' \
               -derivedDataPath build \
-              build > xcodebuild.log 2>&1 || (echo "❌ Build failed" && cat xcodebuild.log && exit 1)
-            echo "✅ Build successful"
+              build 2>&1 | tee xcodebuild.log
 
       - run:
           name: Save build logs
