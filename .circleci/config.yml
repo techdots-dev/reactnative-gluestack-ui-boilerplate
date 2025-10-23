@@ -4,8 +4,6 @@ jobs:
   ios-e2e-tests:
     macos:
       xcode: "16.2.0"
-    # REMOVE this line: resource_class: macos.x86.64.medium.gen2
-    # CircleCI auto-assigns resource class for macOS
     steps:
       - checkout
       
@@ -65,6 +63,7 @@ jobs:
           name: Build iOS app (Release)
           command: |
             cd ios
+            # Save build output to file to avoid 50MB limit
             xcodebuild \
               -workspace gluestackuiboilerplate.xcworkspace \
               -scheme gluestackuiboilerplate \
@@ -72,19 +71,15 @@ jobs:
               -sdk iphonesimulator \
               -destination 'platform=iOS Simulator,name=iPhone 16 Pro Max,OS=18.2' \
               -derivedDataPath build \
-              build > xcodebuild.log 2>&1
+              build > xcodebuild.log 2>&1 || (echo "❌ Build failed" && cat xcodebuild.log && exit 1)
+            echo "✅ Build successful"
 
       - run:
-        name: Save build logs as artifact
-        when: always
-        command: |
-          # Save the log file
-          cp ios/xcodebuild.log ./
-          echo "Build log saved"
-
-      - store_artifacts:
-          path: xcodebuild.log
-          destination: build-logs
+          name: Save build logs
+          command: |
+            # Copy build log to workspace root for artifact storage
+            cp ios/xcodebuild.log ./
+            echo "Build log saved for debugging"
 
       - run:
           name: Install app on simulator
@@ -106,7 +101,7 @@ jobs:
             maestro test .maestro/ --format junit --output results.xml
           environment:
             MAESTRO_APP_ID: com.zeeshantechdots.myapp
-            MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
+            MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
 
       - store_test_results:
           path: results.xml
@@ -114,6 +109,14 @@ jobs:
       - store_artifacts:
           path: results.xml
           destination: test-results
+
+      - store_artifacts:
+          path: xcodebuild.log
+          destination: build-logs
+
+      - store_artifacts:
+          path: ios/build
+          destination: ios-build-output
 
 workflows:
   version: 2
