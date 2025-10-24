@@ -23,6 +23,14 @@ jobs:
             yarn -v
 
       - run:
+          name: Install Java 8 (for AVD)
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-8-jdk
+            sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+            java -version
+
+      - run:
           name: Show environment info
           command: |
             echo "Node version: $(node --version)"
