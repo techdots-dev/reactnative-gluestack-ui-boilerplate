@@ -55,12 +55,12 @@ jobs:
           name: Prebuild Android
           command: npx expo prebuild --platform android
       - run:
-          name: Setup Android Emulator (Java 17 compatible)
+          name: Setup Android Emulator
           command: |
-            echo "🚀 Setting up Android emulator with Java 17..."
+            echo "🚀 Setting up Android emulator..."
             export ANDROID_HOME=$ANDROID_SDK_ROOT
             
-            # Download latest command-line tools
+            # Download command-line tools
             mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
             cd "$ANDROID_HOME/cmdline-tools"
             wget -q -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
@@ -69,14 +69,9 @@ jobs:
             cd -
             
             export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
-            echo 'export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH' >> $BASH_ENV
             
-            # Accept licenses via file method
-            mkdir -p ~/.android
-            touch ~/.android/repositories.cfg
-            mkdir -p $ANDROID_HOME/licenses
-            echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/android-sdk-license
-            echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+            # Accept licenses (separate command to avoid pipe issues)
+            yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME
             
             # Install packages
             sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64" --sdk_root=$ANDROID_HOME
@@ -93,7 +88,6 @@ jobs:
                 break
               fi
               sleep 5
-              echo "Waiting for emulator boot... ($((i*5)) seconds)"
             done
       - run:
           name: Build Android APK (Release)
