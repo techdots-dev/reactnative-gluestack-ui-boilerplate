@@ -57,33 +57,44 @@ jobs:
       - run:
           name: Setup Android Emulator (Java 17 compatible)
           command: |
-            # Use the script above - downloads new command-line tools
             echo "🚀 Setting up Android emulator with Java 17..."
             export ANDROID_HOME=$ANDROID_SDK_ROOT
             
             # Download latest command-line tools
             mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
             cd "$ANDROID_HOME/cmdline-tools"
-            wget -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -o commandlinetools.zip -d latest
+            wget -q -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q -o commandlinetools.zip -d latest
             rm commandlinetools.zip
             cd -
             
             export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
             echo 'export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH' >> $BASH_ENV
             
-            yes | sdkmanager --licenses >/dev/null || true
-            yes | sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64"
-            echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel" || true
+            # Accept licenses via file method
+            mkdir -p ~/.android
+            touch ~/.android/repositories.cfg
+            mkdir -p $ANDROID_HOME/licenses
+            echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/android-sdk-license
+            echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+            
+            # Install packages
+            sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64" --sdk_root=$ANDROID_HOME
+            
+            # Create and start emulator
+            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel" -f
             nohup emulator -avd test -no-audio -no-window -gpu swiftshader_indirect >/dev/null 2>&1 &
+            
+            # Wait for boot
             adb wait-for-device
-            boot_completed=""
-            until [ "$boot_completed" = "1" ]; do
-              boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            for i in {1..30}; do
+              if adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1"; then
+                echo "✅ Emulator booted successfully!"
+                break
+              fi
               sleep 5
-              echo "Waiting for emulator to boot..."
+              echo "Waiting for emulator boot... ($((i*5)) seconds)"
             done
-            echo "✅ Emulator booted successfully!"
       - run:
           name: Build Android APK (Release)
           command: |
