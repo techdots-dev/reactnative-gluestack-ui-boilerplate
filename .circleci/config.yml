@@ -23,12 +23,22 @@ jobs:
             yarn -v
 
       - run:
-          name: Install Java 8 (for AVD)
+          name: Install and Set Java 8
           command: |
             sudo apt-get update
             sudo apt-get install -y openjdk-8-jdk
-            sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+            echo "✅ Java 8 installed"
+
+            # Set Java 8 as the default
+            sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/bin/java 1081
+            sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac 1081
+            sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/bin/java
+            sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+
+            echo "Java version:"
             java -version
+            echo "Javac version:"
+            javac -version
 
       - run:
           name: Show environment info
@@ -66,6 +76,8 @@ jobs:
           name: Start Android Emulator
           command: |
             echo "🧱 Setting up Android emulator..."
+
+            echo "Using Java:" && which java && java -version
 
             export ANDROID_HOME=$ANDROID_SDK_ROOT
             export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
