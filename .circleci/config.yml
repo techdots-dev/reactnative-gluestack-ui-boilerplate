@@ -7,7 +7,7 @@ orbs:
 jobs:
   android-e2e:
     docker:
-      - image: cimg/node:20.18.1
+      - image: cimg/openjdk:17.0-node-20.18.1
     resource_class: medium
     environment:
       JVM_OPTS: -Xmx4096m
@@ -19,6 +19,8 @@ jobs:
           command: |
             echo "Node version: $(node --version)"
             echo "NPM version: $(npm --version)"
+            echo "Java version: $(java -version)"
+            echo "Yarn version: $(yarn --version)"
 
       - restore_cache:
           keys:
@@ -46,33 +48,7 @@ jobs:
       - run:
           name: Prebuild Android
           command: npx expo prebuild --platform android
-      - run:
-          name: Start Android Emulator
-          command: |
-            echo "🧱 Setting up Android emulator..."
-
-            export ANDROID_HOME=$ANDROID_SDK_ROOT
-            export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
-
-            yes | sdkmanager --licenses
-            sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
-
-            echo "Creating AVD..."
-            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
-
-            echo "Starting emulator..."
-            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
-
-            # Wait until device fully boots
-            adb wait-for-device
-            boot_completed=""
-            until [ "$boot_completed" = "1" ]; do
-              boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
-              sleep 5
-              echo "Waiting for emulator to boot..."
-            done
-
-            echo "✅ Emulator booted successfully!"
+  
       - run:
           name: Build Android APK (Release)
           command: |
@@ -80,11 +56,17 @@ jobs:
             SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
 
       - run:
-          name: Install App on Emulator
+          name: Install APK on CI Android Device
           command: |
             APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
-            echo "✅ Found APK: $APK_PATH"
-            adb install "$APK_PATH"
+            echo "📱 Installing APK: $APK_PATH"
+            
+            # Install on CircleCI's built-in Android device
+            adb install -r "$APK_PATH"
+            
+            # Verify installation
+            adb shell pm list packages | grep com.zeeshantechdots.myapp
+            echo "✅ App installed successfully"
             sleep 30
       - run:
           name: Run Maestro Tests (Android)
