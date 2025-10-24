@@ -97,7 +97,7 @@ jobs:
           command: |
             echo "⚙️ Configuring Gradle for CI environment..."
             echo "# CI Optimizations" >> android/gradle.properties
-            echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
+            echo "org.gradle.jvmargs=-Xmx4G -Dkotlin.daemon.jvm.options=-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> android/gradle.properties
             echo "org.gradle.daemon=false" >> android/gradle.properties
             echo "org.gradle.parallel=true" >> android/gradle.properties
             echo "org.gradle.configureondemand=true" >> android/gradle.properties
