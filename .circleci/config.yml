@@ -98,13 +98,12 @@ jobs:
             export PATH="$HOME/.maestro/bin:$PATH"
             maestro test .maestro/ --format junit --output android-results.xml
       - run:
-        name: Quit Android Emulator
-        command: |
-          echo "🛑 Quitting Android Emulator..."
-          pkill -f "emulator" || true
-          pkill -f "qemu" || true
-          
-          echo "✅ Android Emulator quit successfully"
+          name: Quit Android Emulator
+          command: |
+            echo "🛑 Quitting Android Emulator..."
+            pkill -f "emulator" || true
+            pkill -f "qemu" || true
+            echo "✅ Android Emulator quit successfully"
       - store_test_results:
           path: android-results.xml
 
@@ -224,12 +223,12 @@ jobs:
             maestro test .maestro/ --format junit --output ios-results.xml
 
       - run:
-        name: Quit iOS Simulator
-        command: |
-          echo "🛑 Quitting iOS Simulator..."
-          xcrun simctl shutdown all
-          pkill -f "Simulator" || true
-          echo "✅ Simulator quit successfully"
+          name: Quit iOS Simulator
+          command: |
+            echo "🛑 Quitting iOS Simulator..."
+            xcrun simctl shutdown all
+            pkill -f "Simulator" || true
+            echo "✅ Simulator quit successfully"
       - store_test_results:
           path: ios-results.xml
 
