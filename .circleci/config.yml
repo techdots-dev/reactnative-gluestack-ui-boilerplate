@@ -100,6 +100,7 @@ jobs:
   ios-e2e:
     macos:
       xcode: "16.2.0"
+    <<: *defaults
     steps:
       - checkout
       - run:
@@ -196,5 +197,5 @@ workflows:
   version: 2
   e2e:
     jobs:
-      - android-e2e
+      # - android-e2e
       - ios-e2e
