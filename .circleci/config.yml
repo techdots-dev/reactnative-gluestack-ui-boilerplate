@@ -70,8 +70,8 @@ jobs:
             
             export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
             
-            # Accept licenses (separate command to avoid pipe issues)
-            yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME
+            # Accept licenses (ignore exit code 141 - pipe closed)
+            yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME || true
             
             # Install packages
             sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64" --sdk_root=$ANDROID_HOME
