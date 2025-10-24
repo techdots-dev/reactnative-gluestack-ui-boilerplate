@@ -151,30 +151,19 @@ jobs:
           command: |
             #!/bin/bash
             set -e
-            echo "🔍 Detecting available iPhone simulator..."
-
-            DEVICE_INFO=$(xcrun simctl list devices available | grep -m1 "iPhone")
-            DEVICE_NAME=$(echo "$DEVICE_INFO" | awk -F '[()]' '{print $1}' | xargs)
-            DEVICE_ID=$(echo "$DEVICE_INFO" | grep -oE '[0-9A-F-]{36}' | head -1)
-
-            if [ -z "$DEVICE_NAME" ] || [ -z "$DEVICE_ID" ]; then
-              echo "❌ No available iPhone simulator found!"
-              exit 1
-            fi
-
-            if ! xcrun simctl list devices | grep "$DEVICE_ID" | grep -q Booted; then
-              echo "⚙️ Booting simulator: $DEVICE_NAME [$DEVICE_ID]..."
-              xcrun simctl boot "$DEVICE_ID" || true
-            else
-              echo "✅ Simulator already booted: $DEVICE_NAME [$DEVICE_ID]"
-            fi
-
-            open -a Simulator || true
-            xcrun simctl bootstatus "$DEVICE_ID" -b
-            echo "✅ Simulator ready"
-
+            echo "🔍 Booting iPhone 16 Pro Max (18.2)..."
+      
+            # Use the exact device ID for iPhone 16 Pro Max
+            DEVICE_ID="E478EC29-38BB-424F-B32D-349FBEA16C8F"
+            DEVICE_NAME="iPhone 16 Pro Max"
+            
+            # Boot this specific device
+            xcrun simctl boot "$DEVICE_ID"
+            sleep 25
+            
             echo "$DEVICE_NAME" > .current_simulator_name
             echo "$DEVICE_ID" > .current_simulator_id
+            echo "✅ Simulator ready: $DEVICE_NAME [$DEVICE_ID]"
       - run:
           name: Build iOS app (Release)
           command: |
@@ -182,8 +171,11 @@ jobs:
             echo "🚀 Starting Xcode build (minimal logs)..."
             gem install xcpretty --no-document
 
-            DEVICE_NAME=$(cat ../.current_simulator_name)
-            DESTINATION="platform=iOS Simulator,name=$DEVICE_NAME"
+            # Read the device ID we booted
+            DEVICE_ID=$(cat ../.current_simulator_id)
+            
+            # Use device ID directly
+            DESTINATION="platform=iOS Simulator,id=$DEVICE_ID"
 
             set -o pipefail
             SENTRY_DISABLE_AUTO_UPLOAD=true \
