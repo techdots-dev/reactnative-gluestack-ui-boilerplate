@@ -96,14 +96,12 @@ jobs:
           name: Configure Gradle for CI
           command: |
             echo "⚙️ Configuring Gradle for CI environment..."
-            cat >> android/gradle.properties << 'EOF'
-            # CI Optimizations
-            org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
-            org.gradle.daemon=false
-            org.gradle.parallel=true
-            org.gradle.configureondemand=true
-            android.enableBuildCache=false
-            EOF
+            echo "# CI Optimizations" >> android/gradle.properties
+            echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
+            echo "org.gradle.daemon=false" >> android/gradle.properties
+            echo "org.gradle.parallel=true" >> android/gradle.properties
+            echo "org.gradle.configureondemand=true" >> android/gradle.properties
+            echo "android.enableBuildCache=false" >> android/gradle.properties
 
       - run:
           name: Build Android APK (Release)
