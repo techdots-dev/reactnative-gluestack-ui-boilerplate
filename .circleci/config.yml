@@ -56,34 +56,32 @@ jobs:
             cd android
             SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
       - run:
-        name: Start Android Emulator
-        background: true
-        command: |
-          echo "🧱 Setting up Android emulator..."
+          name: Start Android Emulator
+          command: |
+            echo "🧱 Setting up Android emulator..."
 
-          export ANDROID_HOME=$ANDROID_SDK_ROOT
-          export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
+            export ANDROID_HOME=$ANDROID_SDK_ROOT
+            export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
 
-          yes | sdkmanager --licenses
-          sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
+            yes | sdkmanager --licenses
+            sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
 
-          echo "Creating AVD..."
-          avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
+            echo "Creating AVD..."
+            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
 
-          echo "Starting emulator..."
-          nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
+            echo "Starting emulator..."
+            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
 
-          # Wait until device fully boots
-          adb wait-for-device
-          boot_completed=""
-          until [ "$boot_completed" = "1" ]; do
-            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
-            sleep 5
-            echo "Waiting for emulator to boot..."
-          done
+            # Wait until device fully boots
+            adb wait-for-device
+            boot_completed=""
+            until [ "$boot_completed" = "1" ]; do
+              boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+              sleep 5
+              echo "Waiting for emulator to boot..."
+            done
 
-          echo "✅ Emulator booted successfully!"
-
+            echo "✅ Emulator booted successfully!"
       - run:
           name: Install App on Emulator
           command: |
@@ -97,135 +95,121 @@ jobs:
             maestro test .maestro/ --format junit --output android-results.xml
       - store_test_results:
           path: android-results.xml
-      # - store_artifacts:
-      #     path: android-results.xml
-      #     destination: maestro-android-results
-      # - store_artifacts:
-      #     path: android/app/build/outputs
-      #     destination: android-build-output
 
 # -------------------- iOS --------------------
   ios-e2e:
-  macos:
-    xcode: "16.2.0"
+    macos:
+      xcode: "16.2.0"
     resource_class: macos.m1.medium
-  environment:
-    NODE_ENV: production
-    POSTHOG_KEY: ""
-    SENTRY_DSN: ""
-    SENTRY_AUTH_TOKEN: ""
-    API_MODE: "mock"
-    API_URL: "https://jsonplaceholder.typicode.com"
-    EAS_PROJECT_ID: ""
-    NODE_OPTIONS: --max_old_space_size=4096
-  <<: *defaults
-  steps:
-    - checkout
+    environment:
+      NODE_ENV: production
+      POSTHOG_KEY: ""
+      SENTRY_DSN: ""
+      SENTRY_AUTH_TOKEN: ""
+      API_MODE: "mock"
+      API_URL: "https://jsonplaceholder.typicode.com"
+      EAS_PROJECT_ID: ""
+      NODE_OPTIONS: --max_old_space_size=4096
+    <<: *defaults
+    steps:
+      - checkout
 
-    # 1️⃣ Prebuild iOS
-    - run:
-        name: Prebuild iOS
-        command: npx expo prebuild --platform ios
+      # 1️⃣ Prebuild iOS
+      - run:
+          name: Prebuild iOS
+          command: npx expo prebuild --platform ios
 
-    # 2️⃣ Install CocoaPods
-    - run:
-        name: Install CocoaPods
-        command: |
-          cd ios
-          pod install
-          cd ..
+      # 2️⃣ Install CocoaPods
+      - run:
+          name: Install CocoaPods
+          command: |
+            cd ios
+            pod install
+            cd ..
 
-    # 3️⃣ Boot Simulator dynamically and save UDID
-    - run:
-        name: Boot iPhone Simulator
-        command: |
-          #!/bin/bash
-          set -e
-          echo "🔍 Detecting available iPhone simulator..."
+      # 3️⃣ Boot Simulator dynamically and save UDID
+      - run:
+          name: Boot iPhone Simulator
+          command: |
+            #!/bin/bash
+            set -e
+            echo "🔍 Detecting available iPhone simulator..."
 
-          DEVICE_INFO=$(xcrun simctl list devices available | grep -m1 "iPhone")
-          DEVICE_NAME=$(echo "$DEVICE_INFO" | awk -F '[()]' '{print $1}' | xargs)
-          DEVICE_ID=$(echo "$DEVICE_INFO" | grep -oE '[0-9A-F-]{36}' | head -1)
+            DEVICE_INFO=$(xcrun simctl list devices available | grep -m1 "iPhone")
+            DEVICE_NAME=$(echo "$DEVICE_INFO" | awk -F '[()]' '{print $1}' | xargs)
+            DEVICE_ID=$(echo "$DEVICE_INFO" | grep -oE '[0-9A-F-]{36}' | head -1)
 
-          if [ -z "$DEVICE_NAME" ] || [ -z "$DEVICE_ID" ]; then
-            echo "❌ No available iPhone simulator found!"
-            exit 1
-          fi
+            if [ -z "$DEVICE_NAME" ] || [ -z "$DEVICE_ID" ]; then
+              echo "❌ No available iPhone simulator found!"
+              exit 1
+            fi
 
-          if ! xcrun simctl list devices | grep "$DEVICE_ID" | grep -q Booted; then
-            echo "⚙️ Booting simulator: $DEVICE_NAME [$DEVICE_ID]..."
-            xcrun simctl boot "$DEVICE_ID" || true
-          else
-            echo "✅ Simulator already booted: $DEVICE_NAME [$DEVICE_ID]"
-          fi
+            if ! xcrun simctl list devices | grep "$DEVICE_ID" | grep -q Booted; then
+              echo "⚙️ Booting simulator: $DEVICE_NAME [$DEVICE_ID]..."
+              xcrun simctl boot "$DEVICE_ID" || true
+            else
+              echo "✅ Simulator already booted: $DEVICE_NAME [$DEVICE_ID]"
+            fi
 
-          open -a Simulator || true
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-          echo "✅ Simulator ready"
+            open -a Simulator || true
+            xcrun simctl bootstatus "$DEVICE_ID" -b
+            echo "✅ Simulator ready"
 
-          echo "$DEVICE_NAME" > .current_simulator_name
-          echo "$DEVICE_ID" > .current_simulator_id
+            echo "$DEVICE_NAME" > .current_simulator_name
+            echo "$DEVICE_ID" > .current_simulator_id
 
-    # 4️⃣ Build iOS app (Release) using simulator name
-    - run:
-        name: Build iOS app (Release)
-        command: |
-          cd ios
-          echo "🚀 Starting Xcode build (minimal logs)..."
-          gem install xcpretty --no-document
+      # 4️⃣ Build iOS app (Release) using simulator name
+      - run:
+          name: Build iOS app (Release)
+          command: |
+            cd ios
+            echo "🚀 Starting Xcode build (minimal logs)..."
+            gem install xcpretty --no-document
 
-          DEVICE_NAME=$(cat ../.current_simulator_name)
-          DESTINATION="platform=iOS Simulator,name=$DEVICE_NAME"
+            DEVICE_NAME=$(cat ../.current_simulator_name)
+            DESTINATION="platform=iOS Simulator,name=$DEVICE_NAME"
 
-          set -o pipefail
-          SENTRY_DISABLE_AUTO_UPLOAD=true \
-          SENTRY_ALLOW_FAILURE=true \
-          xcodebuild \
-            -workspace *.xcworkspace \
-            -scheme "gluestackuiboilerplate" \
-            -configuration Release \
-            -sdk iphonesimulator \
-            -destination "$DESTINATION" \
-            -derivedDataPath build \
-            ENABLE_TESTABILITY=YES \
-            clean build \
-            | xcpretty --color --simple --report junit --output ../xcodebuild-results.xml
+            set -o pipefail
+            SENTRY_DISABLE_AUTO_UPLOAD=true \
+            SENTRY_ALLOW_FAILURE=true \
+            xcodebuild \
+              -workspace *.xcworkspace \
+              -scheme "gluestackuiboilerplate" \
+              -configuration Release \
+              -sdk iphonesimulator \
+              -destination "$DESTINATION" \
+              -derivedDataPath build \
+              ENABLE_TESTABILITY=YES \
+              clean build \
+              | xcpretty --color --simple --report junit --output ../xcodebuild-results.xml
 
-    # 5️⃣ Install and Launch App on Simulator
-    - run:
-        name: Install and Launch App on Simulator
-        command: |
-          cd ios
-          APP_PATH=$(find build -name "*.app" -type d | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo "❌ No .app found"
-            exit 1
-          fi
-          echo "✅ Found app: $APP_PATH"
-          DEVICE_ID=$(cat ../.current_simulator_id)
-          xcrun simctl install "$DEVICE_ID" "$APP_PATH"
-          sleep 20
+      # 5️⃣ Install and Launch App on Simulator
+      - run:
+          name: Install and Launch App on Simulator
+          command: |
+            cd ios
+            APP_PATH=$(find build -name "*.app" -type d | head -1)
+            if [ -z "$APP_PATH" ]; then
+              echo "❌ No .app found"
+              exit 1
+            fi
+            echo "✅ Found app: $APP_PATH"
+            DEVICE_ID=$(cat ../.current_simulator_id)
+            xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+            sleep 20
 
-    # 6️⃣ Run Maestro Tests (iOS)
-    - run:
-        name: Run Maestro Tests (iOS)
-        command: |
-          export PATH="$HOME/.maestro/bin:$PATH"
-          DEVICE_ID=$(cat .current_simulator_id)
-          echo "Running tests on simulator: $DEVICE_ID"
-          maestro test .maestro/ --format junit --output ios-results.xml
+      # 6️⃣ Run Maestro Tests (iOS)
+      - run:
+          name: Run Maestro Tests (iOS)
+          command: |
+            export PATH="$HOME/.maestro/bin:$PATH"
+            DEVICE_ID=$(cat .current_simulator_id)
+            echo "Running tests on simulator: $DEVICE_ID"
+            maestro test .maestro/ --format junit --output ios-results.xml
 
-    # 7️⃣ Store test results
-    - store_test_results:
-        path: ios-results.xml
-
-
-      # - store_artifacts:
-      #     path: ios-results.xml
-      #     destination: maestro-ios-results
-      # - store_artifacts:
-      #     path: ios/build
-      #     destination: ios-build-output
+      # 7️⃣ Store test results
+      - store_test_results:
+          path: ios-results.xml
 
 # -------------------- WORKFLOW --------------------
 workflows:
