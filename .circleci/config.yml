@@ -54,6 +54,29 @@ jobs:
       - run:
           name: Prebuild Android
           command: npx expo prebuild --platform android
+      
+      - run:
+          name: Configure Gradle for CI
+          command: |
+            echo "⚙️ Configuring Gradle for CI environment..."
+            echo "# CI Optimizations" >> android/gradle.properties
+            echo "org.gradle.jvmargs=-Xmx4G -Dkotlin.daemon.jvm.options=-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> android/gradle.properties
+            echo "org.gradle.daemon=false" >> android/gradle.properties
+            echo "org.gradle.parallel=true" >> android/gradle.properties
+            echo "org.gradle.configureondemand=true" >> android/gradle.properties
+            echo "android.enableBuildCache=false" >> android/gradle.properties
+
+      - run:
+          name: Build Android APK (Release)
+          command: |
+            cd android
+            echo "🏗️ Building Android APK..."
+            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
+              --no-daemon \
+              --max-workers=2 \
+              --console=plain
+            echo "✅ APK build completed"
+
       - run:
           name: Setup Android Emulator (Skip Boot Wait)
           command: |
@@ -92,28 +115,7 @@ jobs:
             sleep 5
             
             echo "🎯 Proceeding with installation - emulator starting in background"
-      - run:
-          name: Configure Gradle for CI
-          command: |
-            echo "⚙️ Configuring Gradle for CI environment..."
-            echo "# CI Optimizations" >> android/gradle.properties
-            echo "org.gradle.jvmargs=-Xmx4G -Dkotlin.daemon.jvm.options=-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> android/gradle.properties
-            echo "org.gradle.daemon=false" >> android/gradle.properties
-            echo "org.gradle.parallel=true" >> android/gradle.properties
-            echo "org.gradle.configureondemand=true" >> android/gradle.properties
-            echo "android.enableBuildCache=false" >> android/gradle.properties
-
-      - run:
-          name: Build Android APK (Release)
-          command: |
-            cd android
-            echo "🏗️ Building Android APK..."
-            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
-              --no-daemon \
-              --max-workers=2 \
-              --console=plain
-            echo "✅ APK build completed"
-
+            
       - run:
           name: Install App on Emulator
           command: |
