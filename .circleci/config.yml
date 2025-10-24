@@ -98,21 +98,15 @@ jobs:
 
 # -------------------- iOS --------------------
   ios-e2e:
-    macos:
-      xcode: "16.2.0"
-    resource_class: macos.m1.medium
-    environment:
-      NODE_ENV: production
-      POSTHOG_KEY: ""
-      SENTRY_DSN: ""
-      SENTRY_AUTH_TOKEN: ""
-      API_MODE: "mock"
-      API_URL: "https://jsonplaceholder.typicode.com"
-      EAS_PROJECT_ID: ""
-      NODE_OPTIONS: --max_old_space_size=4096
-    <<: *defaults
+    runs-on: macos-latest
     steps:
-      - checkout
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js 20.18.1
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: 'yarn'
 
       # 1️⃣ Prebuild iOS
       - run:
