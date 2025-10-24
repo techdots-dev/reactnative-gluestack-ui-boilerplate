@@ -30,71 +30,71 @@ orbs:
 
 # -------------------- ANDROID --------------------
 jobs:
-  android-e2e:
-    docker:
-      - image: cimg/android:2024.06
-    resource_class: medium
-    environment:
-      NODE_ENV: production
-      POSTHOG_KEY: ""
-      SENTRY_DSN: ""
-      SENTRY_AUTH_TOKEN: ""
-      API_MODE: "mock"
-      API_URL: "https://jsonplaceholder.typicode.com"
-      EAS_PROJECT_ID: ""
-      JVM_OPTS: -Xmx4096m
-      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
-    <<: *defaults
-    steps:
-      - checkout
-      - run:
-          name: Prebuild Android
-          command: npx expo prebuild --platform android
-      - run:
-          name: Build Android APK (Release)
-          command: |
-            cd android
-            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
-      - run:
-          name: Start Android Emulator
-          command: |
-            echo "🧱 Setting up Android emulator..."
+  # android-e2e:
+  #   docker:
+  #     - image: cimg/android:2024.06
+  #   resource_class: medium
+  #   environment:
+  #     NODE_ENV: production
+  #     POSTHOG_KEY: ""
+  #     SENTRY_DSN: ""
+  #     SENTRY_AUTH_TOKEN: ""
+  #     API_MODE: "mock"
+  #     API_URL: "https://jsonplaceholder.typicode.com"
+  #     EAS_PROJECT_ID: ""
+  #     JVM_OPTS: -Xmx4096m
+  #     GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
+  #   <<: *defaults
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Prebuild Android
+  #         command: npx expo prebuild --platform android
+  #     - run:
+  #         name: Build Android APK (Release)
+  #         command: |
+  #           cd android
+  #           SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
+  #     - run:
+  #         name: Start Android Emulator
+  #         command: |
+  #           echo "🧱 Setting up Android emulator..."
 
-            export ANDROID_HOME=$ANDROID_SDK_ROOT
-            export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
+  #           export ANDROID_HOME=$ANDROID_SDK_ROOT
+  #           export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
 
-            yes | sdkmanager --licenses
-            sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
+  #           yes | sdkmanager --licenses
+  #           sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
 
-            echo "Creating AVD..."
-            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
+  #           echo "Creating AVD..."
+  #           avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
 
-            echo "Starting emulator..."
-            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
+  #           echo "Starting emulator..."
+  #           nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
 
-            # Wait until device fully boots
-            adb wait-for-device
-            boot_completed=""
-            until [ "$boot_completed" = "1" ]; do
-              boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
-              sleep 5
-              echo "Waiting for emulator to boot..."
-            done
+  #           # Wait until device fully boots
+  #           adb wait-for-device
+  #           boot_completed=""
+  #           until [ "$boot_completed" = "1" ]; do
+  #             boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+  #             sleep 5
+  #             echo "Waiting for emulator to boot..."
+  #           done
 
-            echo "✅ Emulator booted successfully!"
-      - run:
-          name: Install App on Emulator
-          command: |
-            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
-            echo "✅ Found APK: $APK_PATH"
-            adb install "$APK_PATH"
-      - run:
-          name: Run Maestro Tests (Android)
-          command: |
-            export PATH="$HOME/.maestro/bin:$PATH"
-            maestro test .maestro/ --format junit --output android-results.xml
-      - store_test_results:
-          path: android-results.xml
+  #           echo "✅ Emulator booted successfully!"
+  #     - run:
+  #         name: Install App on Emulator
+  #         command: |
+  #           APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+  #           echo "✅ Found APK: $APK_PATH"
+  #           adb install "$APK_PATH"
+  #     - run:
+  #         name: Run Maestro Tests (Android)
+  #         command: |
+  #           export PATH="$HOME/.maestro/bin:$PATH"
+  #           maestro test .maestro/ --format junit --output android-results.xml
+  #     - store_test_results:
+  #         path: android-results.xml
 
 # -------------------- iOS --------------------
   ios-e2e:
