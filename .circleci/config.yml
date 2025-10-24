@@ -98,30 +98,24 @@ jobs:
 
 # -------------------- iOS --------------------
   ios-e2e:
-    runs-on: macos-latest
+    macos:
+      xcode: "16.2.0"
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js 20.18.1
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.18.1'
-          cache: 'yarn'
-
-      # 1️⃣ Prebuild iOS
+      - checkout
+      - run:
+          name: Setup Node.js
+          command: |
+            node -v
+            npm install -g yarn
       - run:
           name: Prebuild iOS
           command: npx expo prebuild --platform ios
-
-      # 2️⃣ Install CocoaPods
       - run:
           name: Install CocoaPods
           command: |
             cd ios
             pod install
             cd ..
-
-      # 3️⃣ Boot Simulator dynamically and save UDID
       - run:
           name: Boot iPhone Simulator
           command: |
@@ -151,8 +145,6 @@ jobs:
 
             echo "$DEVICE_NAME" > .current_simulator_name
             echo "$DEVICE_ID" > .current_simulator_id
-
-      # 4️⃣ Build iOS app (Release) using simulator name
       - run:
           name: Build iOS app (Release)
           command: |
@@ -176,8 +168,6 @@ jobs:
               ENABLE_TESTABILITY=YES \
               clean build \
               | xcpretty --color --simple --report junit --output ../xcodebuild-results.xml
-
-      # 5️⃣ Install and Launch App on Simulator
       - run:
           name: Install and Launch App on Simulator
           command: |
@@ -191,8 +181,6 @@ jobs:
             DEVICE_ID=$(cat ../.current_simulator_id)
             xcrun simctl install "$DEVICE_ID" "$APP_PATH"
             sleep 20
-
-      # 6️⃣ Run Maestro Tests (iOS)
       - run:
           name: Run Maestro Tests (iOS)
           command: |
@@ -200,8 +188,6 @@ jobs:
             DEVICE_ID=$(cat .current_simulator_id)
             echo "Running tests on simulator: $DEVICE_ID"
             maestro test .maestro/ --format junit --output ios-results.xml
-
-      # 7️⃣ Store test results
       - store_test_results:
           path: ios-results.xml
 
@@ -210,5 +196,5 @@ workflows:
   version: 2
   e2e:
     jobs:
-      # - android-e2e
+      - android-e2e
       - ios-e2e
