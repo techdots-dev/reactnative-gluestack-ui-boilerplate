@@ -23,24 +23,6 @@ jobs:
             yarn -v
 
       - run:
-          name: Install and Set Java 8
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y openjdk-8-jdk
-            echo "✅ Java 8 installed"
-
-            # Set Java 8 as the default
-            sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/bin/java 1081
-            sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac 1081
-            sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/bin/java
-            sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-
-            echo "Java version:"
-            java -version
-            echo "Javac version:"
-            javac -version
-
-      - run:
           name: Show environment info
           command: |
             echo "Node version: $(node --version)"
@@ -73,25 +55,27 @@ jobs:
           name: Prebuild Android
           command: npx expo prebuild --platform android
       - run:
-          name: Start Android Emulator
+          name: Setup Android Emulator (Java 17 compatible)
           command: |
-            echo "🧱 Setting up Android emulator..."
-
-            echo "Using Java:" && which java && java -version
-
+            # Use the script above - downloads new command-line tools
+            echo "🚀 Setting up Android emulator with Java 17..."
             export ANDROID_HOME=$ANDROID_SDK_ROOT
-            export PATH=$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
-
-            yes | sdkmanager --licenses
-            sdkmanager --install "platforms;android-34" "system-images;android-34;google_apis;x86_64"
-
-            echo "Creating AVD..."
-            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
-
-            echo "Starting emulator..."
-            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect > /dev/null 2>&1 &
-
-            # Wait until device fully boots
+            
+            # Download latest command-line tools
+            mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+            cd "$ANDROID_HOME/cmdline-tools"
+            wget -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -o commandlinetools.zip -d latest
+            rm commandlinetools.zip
+            cd -
+            
+            export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+            echo 'export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH' >> $BASH_ENV
+            
+            yes | sdkmanager --licenses >/dev/null || true
+            yes | sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64"
+            echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel" || true
+            nohup emulator -avd test -no-audio -no-window -gpu swiftshader_indirect >/dev/null 2>&1 &
             adb wait-for-device
             boot_completed=""
             until [ "$boot_completed" = "1" ]; do
@@ -99,7 +83,6 @@ jobs:
               sleep 5
               echo "Waiting for emulator to boot..."
             done
-
             echo "✅ Emulator booted successfully!"
       - run:
           name: Build Android APK (Release)
