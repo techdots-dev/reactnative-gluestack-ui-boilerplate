@@ -7,7 +7,7 @@ orbs:
 jobs:
   android-e2e:
     docker:
-      - image: cimg/android:2024.04
+      - image: cimg/node:20.18.1
     resource_class: medium
     environment:
       JVM_OPTS: -Xmx4096m
@@ -24,16 +24,6 @@ jobs:
           keys:
             - v1-dependencies-{{ checksum "package.json" }}
             - v1-dependencies-
-
-      - run:
-          name: Install Node.js 20
-          command: |
-            # Install Node.js 20.x
-            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-            apt-get update
-            apt-get install -y nodejs
-            echo "Node version: $(node --version)"
-            echo "NPM version: $(npm --version)"
 
       - run:
           name: Install dependencies
