@@ -7,7 +7,7 @@ orbs:
 jobs:
   android-e2e:
     docker:
-      - image: cimg/android:2024.06
+      - image: cimg/android:2024.04
     resource_class: medium
     environment:
       JVM_OPTS: -Xmx4096m
