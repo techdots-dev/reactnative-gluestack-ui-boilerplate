@@ -76,19 +76,43 @@ jobs:
             # Install packages
             sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64" --sdk_root=$ANDROID_HOME
             
-            # Create and start emulator
+            # Create emulator
             avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel" -f
-            nohup emulator -avd test -no-audio -no-window -gpu swiftshader_indirect >/dev/null 2>&1 &
             
-            # Wait for boot
+            echo "🚀 Starting Android emulator..."
+            # Start emulator with more options to prevent hanging
+            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect -memory 2048 -cores 2 > emulator.log 2>&1 &
+            EMULATOR_PID=$!
+            
+            echo "⏳ Waiting for emulator to boot (timeout: 120 seconds)..."
+            
+            # Wait for device to be available
             adb wait-for-device
-            for i in {1..30}; do
+            echo "✅ Device detected"
+            
+            # Wait for boot completion with timeout
+            BOOT_TIMEOUT=150
+            for i in $(seq 1 $BOOT_TIMEOUT); do
               if adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1"; then
-                echo "✅ Emulator booted successfully!"
+                echo "✅ Emulator fully booted!"
                 break
               fi
+              if [ $i -eq $BOOT_TIMEOUT ]; then
+                echo "❌ Emulator boot timeout after $BOOT_TIMEOUT seconds"
+                echo "📄 Emulator log:"
+                tail -50 emulator.log
+                kill $EMULATOR_PID 2>/dev/null || true
+                exit 1
+              fi
               sleep 5
+              echo "Still booting... ($((i*5)) seconds)"
             done
+            
+            # Additional verification
+            echo "🔍 Verifying emulator status..."
+            adb devices
+            adb shell pm list packages | head -5
+            echo "🎯 Emulator ready for testing!"
       - run:
           name: Build Android APK (Release)
           command: |
