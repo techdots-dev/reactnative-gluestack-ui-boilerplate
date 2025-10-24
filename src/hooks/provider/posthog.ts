@@ -84,7 +84,7 @@ export const initPosthog = async (): Promise<PostHog> => {
       posthog = instance;
       return posthog;
     } catch (error) {
-      console.error("Failed to initialize PostHog:", error);
+      console.log("Failed to initialize PostHog:", error);
       // Create a mock PostHog instance that has captureException method
       const mockPostHog = {
         capture: () => {},
