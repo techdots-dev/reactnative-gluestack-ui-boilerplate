@@ -28,7 +28,6 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            npm install -g yarn
             yarn install --frozen-lockfile
 
       - save_cache:
@@ -43,11 +42,6 @@ jobs:
             curl -Ls "https://get.maestro.mobile.dev" | bash
             export PATH="$HOME/.maestro/bin:$PATH"
             echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
-      - run:
-          name: Setup Node.js
-          command: |
-            node -v
-            npm install -g yarn
 
       - run:
           name: Prebuild Android
