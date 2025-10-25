@@ -17,9 +17,6 @@ jobs:
       - run:
           name: Install Node.js 20.18.1
           command: |
-            echo "⚙️ Installing Node.js 20.18.1 with NVM..."
-            
-            # Use NVM for reliable version management
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -33,16 +30,6 @@ jobs:
             
             corepack disable
             npm install -g yarn@1.22.22
-            
-            echo "✅ Node: $(node --version)"
-            echo "✅ Yarn: $(yarn --version)"
-
-
-      - run:
-          name: Show environment info
-          command: |
-            echo "Node version: $(node --version)"
-            echo "NPM version: $(npm --version)"
 
       - restore_cache:
           keys:
@@ -91,107 +78,31 @@ jobs:
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0
 
-      # - run:
-      #     name: Prebuild Android
-      #     command: npx expo prebuild --platform android
-
-      # - run:
-      #     name: Install required Android SDK components
-      #     command: |
-      #       echo "📦 Installing required Android SDK components..."
-      #       # Accept licenses first
-      #       yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-            
-      #       # Install specific system image if needed
-      #       $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
-            
-      #       echo "✅ Android SDK components installed"
+      - run:
+          name: Prebuild Android
+          command: npx expo prebuild --platform android
 
       - run:
-          name: Download APK from Google Drive
+          name: Build Android APK (Release)
           command: |
-            echo "📥 Downloading APK from Google Drive..."
-
-            pip install gdown
-            gdown "https://drive.google.com/uc?id=13QVkgS6uKQZlLPagteQsOjYdUrfvHvEu" -O app-release-1.apk
-            
-            # Verify the download
-            if [ -f "app-release-1.apk" ]; then
-              echo "✅ APK downloaded successfully"
-              ls -la app-release-1.apk
-            else
-              echo "❌ APK download failed"
-              exit 1
-            fi
-
-      # - run:
-      #     name: Setup Android Emulator
-      #     command: |
-      #       echo "🚀 Setting up Android emulator..."
-            
-      #       # Remove any existing AVD first
-      #       $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager delete avd -n test || true
-            
-      #       # Create AVD with simpler configuration
-      #       echo "no" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
-      #         -n test \
-      #         -k "system-images;android-33;google_apis;x86_64" \
-      #         --device "pixel_4" \
-      #         --force
-            
-      #       # Start emulator with minimal configuration
-      #       $ANDROID_SDK_ROOT/emulator/emulator -avd test \
-      #         -no-audio \
-      #         -no-window \
-      #         -gpu swiftshader \
-      #         -no-snapshot \
-      #         -memory 1024 \
-      #         -partition-size 1024 &
-            
-      #       # Wait for emulator with better detection
-      #       echo "⏳ Waiting for emulator to boot..."
-      #       $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device
-            
-      #       # Wait for boot completion with retries
-      #       for i in {1..30}; do
-      #         BOOT_COMPLETED=$($ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null)
-      #         if [ "$BOOT_COMPLETED" = "1" ]; then
-      #           echo "✅ Emulator is fully booted"
-      #           break
-      #         fi
-      #         echo "⏱️ Boot not complete yet... ($i/30)"
-      #         sleep 10
-      #       done
-            
-      #       if [ "$BOOT_COMPLETED" != "1" ]; then
-      #         echo "❌ Emulator failed to boot properly"
-      #         exit 1
-      #       fi
-
-      # - run:
-      #     name: Build Android APK (Release)
-      #     command: |
-      #       rm -rf android/app/.cxx && cd android && ./gradlew clean && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
-      #       echo "✅ APK build completed"
+            cd android
+            ./gradlew clean
+            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
+            echo "✅ APK build completed"
 
       - run:
           name: Install App on Emulator
           command: |
-            APK_PATH="./app-release-1.apk"
+            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+            echo "✅ Found APK: $APK_PATH"
             adb install -r -t -g "$APK_PATH"
-            sleep 30
+            sleep 10
       - run:
           name: Run Maestro Tests (Android)
           command: |
             export PATH="$HOME/.maestro/bin:$PATH"
             maestro test .maestro/ --format junit --output android-results.xml
-      # - run:
-      #     name: Quit Android Emulator
-      #     command: |
-      #       echo "🛑 Quitting Android Emulator..."
-      #       pkill -f "emulator" || true
-      #       pkill -f "qemu" || true
-      #       echo "✅ Android Emulator quit successfully"
+
       - store_test_results:
           path: android-results.xml
 
@@ -201,13 +112,6 @@ jobs:
       xcode: "16.2.0"
     steps:
       - checkout
-      - run:
-          name: Show environment info
-          command: |
-            echo "Node version: $(node --version)"
-            echo "NPM version: $(npm --version)"
-            xcodebuild -version
-
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "package.json" }}
@@ -231,11 +135,7 @@ jobs:
             curl -Ls "https://get.maestro.mobile.dev" | bash
             export PATH="$HOME/.maestro/bin:$PATH"
             echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
-      - run:
-          name: Setup Node.js
-          command: |
-            node -v
-            npm install -g yarn
+  
       - run:
           name: Prebuild iOS
           command: npx expo prebuild --platform ios
@@ -294,10 +194,6 @@ jobs:
           command: |
             cd ios
             APP_PATH=$(find build -name "*.app" -type d | head -1)
-            if [ -z "$APP_PATH" ]; then
-              echo "❌ No .app found"
-              exit 1
-            fi
             echo "✅ Found app: $APP_PATH"
             DEVICE_ID=$(cat ../.current_simulator_id)
             xcrun simctl install "$DEVICE_ID" "$APP_PATH"
@@ -310,13 +206,6 @@ jobs:
             echo "Running tests on simulator: $DEVICE_ID"
             maestro test .maestro/ --format junit --output ios-results.xml
 
-      - run:
-          name: Quit iOS Simulator
-          command: |
-            echo "🛑 Quitting iOS Simulator..."
-            xcrun simctl shutdown all
-            pkill -f "Simulator" || true
-            echo "✅ Simulator quit successfully"
       - store_test_results:
           path: ios-results.xml
 
@@ -326,4 +215,4 @@ workflows:
   e2e:
     jobs:
       - android-e2e
-      # - ios-e2e
+      - ios-e2e
