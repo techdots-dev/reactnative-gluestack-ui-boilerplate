@@ -7,7 +7,7 @@ orbs:
 jobs:
   android-e2e:
     machine:
-      image: android:2024.04.1
+      image: android:default
     resource_class: large
     environment:
       JVM_OPTS: -Xmx6144m
@@ -43,11 +43,6 @@ jobs:
           command: |
             echo "Node version: $(node --version)"
             echo "NPM version: $(npm --version)"
-            echo "📱 Android Machine Image Environment"
-            echo "Java version: $(java -version 2>&1 | head -1)"
-            echo "Android SDK: $ANDROID_SDK_ROOT"
-            echo "Available system images:"
-            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "system-images" || true
 
       - restore_cache:
           keys:
@@ -73,20 +68,44 @@ jobs:
             echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
 
       - run:
-          name: Prebuild Android
-          command: npx expo prebuild --platform android
+          name: Create avd
+          command: |
+            SYSTEM_IMAGES="system-images;android-29;default;x86"
+            sdkmanager "$SYSTEM_IMAGES"
+            echo "no" | avdmanager --verbose create avd -n test -k "$SYSTEM_IMAGES"
 
       - run:
-          name: Install required Android SDK components
+          name: Launch emulator
           command: |
-            echo "📦 Installing required Android SDK components..."
-            # Accept licenses first
-            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+            emulator -avd test -delay-adb -verbose -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          background: true
+
+      - run:
+          name: Wait for emulator to start
+          command: |
+            circle-android wait-for-boot
+      - run:
+          name: Disable emulator animations
+          command: |
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
+
+      # - run:
+      #     name: Prebuild Android
+      #     command: npx expo prebuild --platform android
+
+      # - run:
+      #     name: Install required Android SDK components
+      #     command: |
+      #       echo "📦 Installing required Android SDK components..."
+      #       # Accept licenses first
+      #       yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
             
-            # Install specific system image if needed
-            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
+      #       # Install specific system image if needed
+      #       $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
             
-            echo "✅ Android SDK components installed"
+      #       echo "✅ Android SDK components installed"
 
       - run:
           name: Download APK from Google Drive
@@ -94,105 +113,85 @@ jobs:
             echo "📥 Downloading APK from Google Drive..."
 
             pip install gdown
-            gdown "https://drive.google.com/uc?id=13QVkgS6uKQZlLPagteQsOjYdUrfvHvEu" -O app-release.apk
+            gdown "https://drive.google.com/uc?id=13QVkgS6uKQZlLPagteQsOjYdUrfvHvEu" -O app-release-1.apk
             
             # Verify the download
-            if [ -f "app-release.apk" ]; then
+            if [ -f "app-release-1.apk" ]; then
               echo "✅ APK downloaded successfully"
-              ls -la app-release.apk
+              ls -la app-release-1.apk
             else
               echo "❌ APK download failed"
               exit 1
             fi
 
-      - run:
-          name: Setup Android Emulator
-          command: |
-            echo "🚀 Setting up Android emulator..."
+      # - run:
+      #     name: Setup Android Emulator
+      #     command: |
+      #       echo "🚀 Setting up Android emulator..."
             
-            # Remove any existing AVD first
-            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager delete avd -n test || true
+      #       # Remove any existing AVD first
+      #       $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager delete avd -n test || true
             
-            # Create AVD with simpler configuration
-            echo "no" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
-              -n test \
-              -k "system-images;android-33;google_apis;x86_64" \
-              --device "pixel_4" \
-              --force
+      #       # Create AVD with simpler configuration
+      #       echo "no" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
+      #         -n test \
+      #         -k "system-images;android-33;google_apis;x86_64" \
+      #         --device "pixel_4" \
+      #         --force
             
-            # Start emulator with minimal configuration
-            $ANDROID_SDK_ROOT/emulator/emulator -avd test \
-              -no-audio \
-              -no-window \
-              -gpu swiftshader \
-              -no-snapshot \
-              -memory 1024 \
-              -partition-size 1024 &
+      #       # Start emulator with minimal configuration
+      #       $ANDROID_SDK_ROOT/emulator/emulator -avd test \
+      #         -no-audio \
+      #         -no-window \
+      #         -gpu swiftshader \
+      #         -no-snapshot \
+      #         -memory 1024 \
+      #         -partition-size 1024 &
             
-            # Wait for emulator with better detection
-            echo "⏳ Waiting for emulator to boot..."
-            $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device
+      #       # Wait for emulator with better detection
+      #       echo "⏳ Waiting for emulator to boot..."
+      #       $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device
             
-            # Wait for boot completion with retries
-            for i in {1..30}; do
-              BOOT_COMPLETED=$($ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null)
-              if [ "$BOOT_COMPLETED" = "1" ]; then
-                echo "✅ Emulator is fully booted"
-                break
-              fi
-              echo "⏱️ Boot not complete yet... ($i/30)"
-              sleep 10
-            done
+      #       # Wait for boot completion with retries
+      #       for i in {1..30}; do
+      #         BOOT_COMPLETED=$($ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null)
+      #         if [ "$BOOT_COMPLETED" = "1" ]; then
+      #           echo "✅ Emulator is fully booted"
+      #           break
+      #         fi
+      #         echo "⏱️ Boot not complete yet... ($i/30)"
+      #         sleep 10
+      #       done
             
-            if [ "$BOOT_COMPLETED" != "1" ]; then
-              echo "❌ Emulator failed to boot properly"
-              exit 1
-            fi
+      #       if [ "$BOOT_COMPLETED" != "1" ]; then
+      #         echo "❌ Emulator failed to boot properly"
+      #         exit 1
+      #       fi
 
       # - run:
       #     name: Build Android APK (Release)
       #     command: |
-      #       cd android
-      #       echo "🏗️ Building Release APK on Android Machine..."
-      #       SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
-      #         --no-daemon \
-      #         --max-workers=4 \
-      #         -Dorg.gradle.jvmargs="-Xmx6144m" \
-      #         --console=plain
+      #       rm -rf android/app/.cxx && cd android && ./gradlew clean && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
       #       echo "✅ APK build completed"
 
       - run:
           name: Install App on Emulator
           command: |
-            # APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
-            # echo "✅ Found APK: $APK_PATH"
-            # $ANDROID_SDK_ROOT/platform-tools/adb devices
-            # $ANDROID_SDK_ROOT/platform-tools/adb install -r "$APK_PATH"
-            APK_PATH="./app-release.apk"
-            echo "✅ APK found: $(ls -la $APK_PATH)"
-            for attempt in {1..3}; do
-              echo "Installation attempt $attempt/3"
-              if $ANDROID_SDK_ROOT/platform-tools/adb install -r -t -g "$APK_PATH"; then
-                echo "✅ APK installed successfully"
-                break
-              else
-                echo "❌ Installation failed on attempt $attempt, retrying..."
-                sleep 10
-              fi
-            done
+            APK_PATH="./app-release-1.apk"
+            adb install -r -t -g "$APK_PATH"
             sleep 30
       - run:
           name: Run Maestro Tests (Android)
           command: |
             export PATH="$HOME/.maestro/bin:$PATH"
             maestro test .maestro/ --format junit --output android-results.xml
-      - run:
-          name: Quit Android Emulator
-          command: |
-            echo "🛑 Quitting Android Emulator..."
-            pkill -f "emulator" || true
-            pkill -f "qemu" || true
-            echo "✅ Android Emulator quit successfully"
+      # - run:
+      #     name: Quit Android Emulator
+      #     command: |
+      #       echo "🛑 Quitting Android Emulator..."
+      #       pkill -f "emulator" || true
+      #       pkill -f "qemu" || true
+      #       echo "✅ Android Emulator quit successfully"
       - store_test_results:
           path: android-results.xml
 
