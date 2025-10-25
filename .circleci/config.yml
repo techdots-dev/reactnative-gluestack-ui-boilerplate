@@ -77,6 +77,24 @@ jobs:
           command: npx expo prebuild --platform android
 
       - run:
+        name: Setup Android Emulator
+        command: |
+          echo "🚀 Setting up Android emulator..."
+          export ANDROID_SDK_ROOT=/opt/android/sdk
+          export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
+          
+          # Create AVD directly (machine image has system images pre-installed)
+          echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
+          
+          # Start emulator
+          emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
+          
+          # Wait for device
+          sleep 30
+          adb wait-for-device
+          echo "🎯 Emulator ready for installation"
+
+      - run:
           name: Build Android APK (Release)
           command: |
             cd android
@@ -87,38 +105,6 @@ jobs:
               -Dorg.gradle.jvmargs="-Xmx6144m" \
               --console=plain
             echo "✅ APK build completed"
-
-      - run:
-          name: Setup Android Emulator (Quick)
-          command: |
-            echo "🚀 Quick emulator setup..."
-            export ANDROID_SDK_ROOT=/opt/android/sdk
-            export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
-            
-            # List available AVDs
-            echo "📱 Available AVDs:"
-            emulator -list-avds
-            
-            # Use existing AVD or create one
-            if emulator -list-avds | grep -q "test"; then
-              echo "✅ Using existing AVD 'test'"
-            else
-              echo "📱 Creating new AVD..."
-              # Ensure system image is available
-              if ! sdkmanager --list | grep -q "system-images;android-34;google_apis;x86_64"; then
-                echo "📥 Installing Android 34 system image..."
-                sdkmanager --install "system-images;android-34;google_apis;x86_64"
-              fi
-              avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" -f
-            fi
-            
-            # Start emulator
-            emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
-            
-            # Quick wait and proceed
-            sleep 30
-            adb wait-for-device
-            echo "🎯 Emulator started - proceeding with installation"
 
       - run:
           name: Install App on Emulator
