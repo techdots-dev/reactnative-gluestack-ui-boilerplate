@@ -31,9 +31,8 @@ jobs:
             echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
             echo 'nvm use 20.18.1' >> $BASH_ENV
             
-            # Setup Yarn
-            corepack enable
-            yarn set version stable
+            corepack disable
+            npm install -g yarn@1.22.22
             
             echo "✅ Node: $(node --version)"
             echo "✅ Yarn: $(yarn --version)"
