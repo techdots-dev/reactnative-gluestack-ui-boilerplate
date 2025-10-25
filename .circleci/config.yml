@@ -86,8 +86,12 @@ jobs:
           name: Build Android APK (Release)
           command: |
             cd android
-            ./gradlew clean
-            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
+            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease \                   
+              -PreactNativeArchitectures=x86 \
+              --parallel \
+              --max-workers=4 \
+              --build-cache \
+              --console=plain
             echo "✅ APK build completed"
 
       - run:
