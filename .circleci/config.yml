@@ -8,7 +8,7 @@ jobs:
   android-e2e:
     docker:
       - image: cimg/android:2024.04
-    resource_class: medium
+    resource_class: xlarge
     environment:
       JVM_OPTS: -Xmx4096m
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
@@ -115,7 +115,7 @@ jobs:
             sleep 5
             
             echo "🎯 Proceeding with installation - emulator starting in background"
-            
+
       - run:
           name: Install App on Emulator
           command: |
