@@ -81,7 +81,7 @@ jobs:
           command: |
             echo "📦 Installing required Android SDK components..."
             # Accept licenses first
-            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
             
             # Install specific system image if needed
             $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
