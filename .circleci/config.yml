@@ -201,6 +201,7 @@ jobs:
             APP_PATH=$(find build -name "*.app" -type d | head -1)
             echo "✅ Found app: $APP_PATH"
             DEVICE_ID=$(cat ../.current_simulator_id)
+            xcrun simctl uninstall "$DEVICE_ID" com.zeeshantechdots.myapp || true
             xcrun simctl install "$DEVICE_ID" "$APP_PATH"
             sleep 20
       - run:
@@ -220,4 +221,4 @@ workflows:
   e2e:
     jobs:
       - android-e2e
-      # - ios-e2e
+      - ios-e2e
