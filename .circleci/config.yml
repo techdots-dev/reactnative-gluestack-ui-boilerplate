@@ -89,6 +89,23 @@ jobs:
             echo "✅ Android SDK components installed"
 
       - run:
+          name: Download APK from Google Drive
+          command: |
+            echo "📥 Downloading APK from Google Drive..."
+
+            pip install gdown
+            gdown "https://drive.google.com/uc?id=13QVkgS6uKQZlLPagteQsOjYdUrfvHvEu" -O app-release.apk
+            
+            # Verify the download
+            if [ -f "app-release.apk" ]; then
+              echo "✅ APK downloaded successfully"
+              ls -la app-release.apk
+            else
+              echo "❌ APK download failed"
+              exit 1
+            fi
+
+      - run:
           name: Setup Android Emulator
           command: |
             echo "🚀 Setting up Android emulator..."
@@ -132,26 +149,37 @@ jobs:
               exit 1
             fi
 
-      - run:
-          name: Build Android APK (Release)
-          command: |
-            cd android
-            echo "🏗️ Building Release APK on Android Machine..."
-            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
-              --no-daemon \
-              --max-workers=4 \
-              -Dorg.gradle.jvmargs="-Xmx6144m" \
-              --console=plain
-            echo "✅ APK build completed"
+      # - run:
+      #     name: Build Android APK (Release)
+      #     command: |
+      #       cd android
+      #       echo "🏗️ Building Release APK on Android Machine..."
+      #       SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
+      #         --no-daemon \
+      #         --max-workers=4 \
+      #         -Dorg.gradle.jvmargs="-Xmx6144m" \
+      #         --console=plain
+      #       echo "✅ APK build completed"
 
       - run:
           name: Install App on Emulator
           command: |
-            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
-            echo "✅ Found APK: $APK_PATH"
-            $ANDROID_SDK_ROOT/platform-tools/adb devices
-            $ANDROID_SDK_ROOT/platform-tools/adb install -r "$APK_PATH"
-            echo "✅ APK installed successfully"
+            # APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+            # echo "✅ Found APK: $APK_PATH"
+            # $ANDROID_SDK_ROOT/platform-tools/adb devices
+            # $ANDROID_SDK_ROOT/platform-tools/adb install -r "$APK_PATH"
+            APK_PATH="./app-release.apk"
+            echo "✅ APK found: $(ls -la $APK_PATH)"
+            for attempt in {1..3}; do
+              echo "Installation attempt $attempt/3"
+              if $ANDROID_SDK_ROOT/platform-tools/adb install -r -t -g "$APK_PATH"; then
+                echo "✅ APK installed successfully"
+                break
+              else
+                echo "❌ Installation failed on attempt $attempt, retrying..."
+                sleep 10
+              fi
+            done
             sleep 30
       - run:
           name: Run Maestro Tests (Android)
