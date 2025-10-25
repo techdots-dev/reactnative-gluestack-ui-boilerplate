@@ -77,22 +77,22 @@ jobs:
           command: npx expo prebuild --platform android
 
       - run:
-        name: Setup Android Emulator
-        command: |
-          echo "🚀 Setting up Android emulator..."
-          export ANDROID_SDK_ROOT=/opt/android/sdk
-          export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
-          
-          # Create AVD directly (machine image has system images pre-installed)
-          echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
-          
-          # Start emulator
-          emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
-          
-          # Wait for device
-          sleep 30
-          adb wait-for-device
-          echo "🎯 Emulator ready for installation"
+          name: Setup Android Emulator
+          command: |
+            echo "🚀 Setting up Android emulator..."
+            export ANDROID_SDK_ROOT=/opt/android/sdk
+            export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
+            
+            # Create AVD directly (machine image has system images pre-installed)
+            echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
+            
+            # Start emulator
+            emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
+            
+            # Wait for device
+            sleep 30
+            adb wait-for-device
+            echo "🎯 Emulator ready for installation"
 
       - run:
           name: Build Android APK (Release)
