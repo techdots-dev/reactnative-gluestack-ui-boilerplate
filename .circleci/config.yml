@@ -45,9 +45,9 @@ jobs:
             echo "NPM version: $(npm --version)"
             echo "📱 Android Machine Image Environment"
             echo "Java version: $(java -version 2>&1 | head -1)"
-            echo "Android SDK: $ANDROID_HOME"
-            echo "Available emulators:"
-            $ANDROID_HOME/emulator/emulator -list-avds
+            echo "Android SDK: $ANDROID_SDK_ROOT"
+            echo "Available system images:"
+            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list | grep "system-images" || true
 
       - restore_cache:
           keys:
@@ -77,21 +77,41 @@ jobs:
           command: npx expo prebuild --platform android
 
       - run:
+          name: Install required Android SDK components
+          command: |
+            echo "📦 Installing required Android SDK components..."
+            # Accept licenses first
+            yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+            
+            # Install specific system image if needed
+            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
+            
+            echo "✅ Android SDK components installed"
+
+      - run:
           name: Setup Android Emulator
           command: |
             echo "🚀 Setting up Android emulator..."
-            export ANDROID_SDK_ROOT=/opt/android/sdk
-            export PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
             
-            # Create AVD directly (machine image has system images pre-installed)
-            echo "no" | avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" --force
+            # Create AVD
+            echo "no" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
+              -n test \
+              -k "system-images;android-33;google_apis;x86_64" \
+              --device "pixel_5" \
+              --force
             
-            # Start emulator
-            emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
+            # Start emulator with proper options
+            $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-audio -no-window -gpu swiftshader_indirect -no-snapshot &
+            EMULATOR_PID=$!
+            echo $EMULATOR_PID > /tmp/emulator_pid
             
-            # Wait for device
+            # Wait for device to be ready
+            echo "⏳ Waiting for emulator to boot..."
+            $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device
             sleep 30
-            adb wait-for-device
+            
+            # Check if device is fully booted
+            $ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed | grep 1
             echo "🎯 Emulator ready for installation"
 
       - run:
@@ -111,8 +131,9 @@ jobs:
           command: |
             APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
             echo "✅ Found APK: $APK_PATH"
-            adb devices
-            adb install "$APK_PATH"
+            $ANDROID_SDK_ROOT/platform-tools/adb devices
+            $ANDROID_SDK_ROOT/platform-tools/adb install -r "$APK_PATH"
+            echo "✅ APK installed successfully"
             sleep 30
       - run:
           name: Run Maestro Tests (Android)
