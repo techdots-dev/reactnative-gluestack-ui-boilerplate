@@ -6,11 +6,11 @@ orbs:
 # -------------------- ANDROID --------------------
 jobs:
   android-e2e:
-    docker:
-      - image: cimg/android:2024.04
+    machine:
+      image: android:2024.04.1
     resource_class: large
     environment:
-      JVM_OPTS: -Xmx4096m
+      JVM_OPTS: -Xmx6144m
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
     steps:
       - checkout
@@ -27,6 +27,11 @@ jobs:
           command: |
             echo "Node version: $(node --version)"
             echo "NPM version: $(npm --version)"
+            echo "📱 Android Machine Image Environment"
+            echo "Java version: $(java -version 2>&1 | head -1)"
+            echo "Android SDK: $ANDROID_HOME"
+            echo "Available emulators:"
+            $ANDROID_HOME/emulator/emulator -list-avds
 
       - restore_cache:
           keys:
@@ -54,26 +59,16 @@ jobs:
       - run:
           name: Prebuild Android
           command: npx expo prebuild --platform android
-      
-      - run:
-          name: Configure Gradle for CI
-          command: |
-            echo "⚙️ Configuring Gradle for CI environment..."
-            echo "# CI Optimizations" >> android/gradle.properties
-            echo "org.gradle.jvmargs=-Xmx4G -Dkotlin.daemon.jvm.options=-Xmx2G -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8" >> android/gradle.properties
-            echo "org.gradle.daemon=false" >> android/gradle.properties
-            echo "org.gradle.parallel=true" >> android/gradle.properties
-            echo "org.gradle.configureondemand=true" >> android/gradle.properties
-            echo "android.enableBuildCache=false" >> android/gradle.properties
 
       - run:
           name: Build Android APK (Release)
           command: |
             cd android
-            echo "🏗️ Building Android APK..."
+            echo "🏗️ Building Release APK on Android Machine..."
             SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew clean assembleRelease \
               --no-daemon \
-              --max-workers=2 \
+              --max-workers=4 \
+              -Dorg.gradle.jvmargs="-Xmx6144m" \
               --console=plain
             echo "✅ APK build completed"
 
