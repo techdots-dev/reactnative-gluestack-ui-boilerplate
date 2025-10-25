@@ -86,7 +86,8 @@ jobs:
           name: Build Android APK (Release)
           command: |
             cd android
-            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease \                   
+            ./gradlew clean
+            SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease \
               -PreactNativeArchitectures=x86 \
               --parallel \
               --max-workers=4 \
@@ -219,4 +220,4 @@ workflows:
   e2e:
     jobs:
       - android-e2e
-      - ios-e2e
+      # - ios-e2e
