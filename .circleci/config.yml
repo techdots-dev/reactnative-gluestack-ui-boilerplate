@@ -15,12 +15,29 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Node.js 20 and Yarn
+          name: Install Node.js 20.18.1
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            sudo npm install -g yarn
-            yarn -v
+            echo "⚙️ Installing Node.js 20.18.1 with NVM..."
+            
+            # Use NVM for reliable version management
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 20.18.1
+            nvm use 20.18.1
+            
+            # Persist for all steps
+            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
+            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+            echo 'nvm use 20.18.1' >> $BASH_ENV
+            
+            # Setup Yarn
+            corepack enable
+            yarn set version stable
+            
+            echo "✅ Node: $(node --version)"
+            echo "✅ Yarn: $(yarn --version)"
+
 
       - run:
           name: Show environment info
@@ -73,43 +90,36 @@ jobs:
             echo "✅ APK build completed"
 
       - run:
-          name: Setup Android Emulator (Skip Boot Wait)
+          name: Setup Android Emulator (Quick)
           command: |
-            echo "🚀 Setting up Android emulator..."
-            export ANDROID_HOME=$ANDROID_SDK_ROOT
+            echo "🚀 Quick emulator setup..."
+            export ANDROID_SDK_ROOT=/opt/android/sdk
+            export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/platform-tools:$PATH
             
-            # Download command-line tools
-            mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
-            cd "$ANDROID_HOME/cmdline-tools"
-            wget -q -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -q -o commandlinetools.zip -d latest
-            rm commandlinetools.zip
-            cd -
+            # List available AVDs
+            echo "📱 Available AVDs:"
+            emulator -list-avds
             
-            export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+            # Use existing AVD or create one
+            if emulator -list-avds | grep -q "test"; then
+              echo "✅ Using existing AVD 'test'"
+            else
+              echo "📱 Creating new AVD..."
+              # Ensure system image is available
+              if ! sdkmanager --list | grep -q "system-images;android-34;google_apis;x86_64"; then
+                echo "📥 Installing Android 34 system image..."
+                sdkmanager --install "system-images;android-34;google_apis;x86_64"
+              fi
+              avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel_5" -f
+            fi
             
-            # Accept licenses
-            yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME || true
+            # Start emulator
+            emulator -avd test -no-audio -no-window -gpu swiftshader_indirect &
             
-            # Install packages
-            sdkmanager --install "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis;x86_64" --sdk_root=$ANDROID_HOME
-            
-            # Create emulator
-            avdmanager create avd -n test -k "system-images;android-34;google_apis;x86_64" --device "pixel" -f
-            
-            echo "🚀 Starting Android emulator (quick start)..."
-            # Start emulator and proceed without waiting for full boot
-            nohup emulator -avd test -no-audio -no-boot-anim -no-window -gpu swiftshader_indirect -memory 1024 > /dev/null 2>&1 &
-            
-            # Wait briefly for device to be recognized
+            # Quick wait and proceed
             sleep 30
-            
-            # Force device recognition and proceed
-            adb kill-server
-            adb start-server
-            sleep 5
-            
-            echo "🎯 Proceeding with installation - emulator starting in background"
+            adb wait-for-device
+            echo "🎯 Emulator started - proceeding with installation"
 
       - run:
           name: Install App on Emulator
