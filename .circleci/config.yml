@@ -93,26 +93,44 @@ jobs:
           command: |
             echo "🚀 Setting up Android emulator..."
             
-            # Create AVD
+            # Remove any existing AVD first
+            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager delete avd -n test || true
+            
+            # Create AVD with simpler configuration
             echo "no" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager create avd \
               -n test \
               -k "system-images;android-33;google_apis;x86_64" \
-              --device "pixel_5" \
+              --device "pixel_4" \
               --force
             
-            # Start emulator with proper options
-            $ANDROID_SDK_ROOT/emulator/emulator -avd test -no-audio -no-window -gpu swiftshader_indirect -no-snapshot &
-            EMULATOR_PID=$!
-            echo $EMULATOR_PID > /tmp/emulator_pid
+            # Start emulator with minimal configuration
+            $ANDROID_SDK_ROOT/emulator/emulator -avd test \
+              -no-audio \
+              -no-window \
+              -gpu swiftshader \
+              -no-snapshot \
+              -memory 1024 \
+              -partition-size 1024 &
             
-            # Wait for device to be ready
+            # Wait for emulator with better detection
             echo "⏳ Waiting for emulator to boot..."
             $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device
-            sleep 30
             
-            # Check if device is fully booted
-            $ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed | grep 1
-            echo "🎯 Emulator ready for installation"
+            # Wait for boot completion with retries
+            for i in {1..30}; do
+              BOOT_COMPLETED=$($ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null)
+              if [ "$BOOT_COMPLETED" = "1" ]; then
+                echo "✅ Emulator is fully booted"
+                break
+              fi
+              echo "⏱️ Boot not complete yet... ($i/30)"
+              sleep 10
+            done
+            
+            if [ "$BOOT_COMPLETED" != "1" ]; then
+              echo "❌ Emulator failed to boot properly"
+              exit 1
+            fi
 
       - run:
           name: Build Android APK (Release)
