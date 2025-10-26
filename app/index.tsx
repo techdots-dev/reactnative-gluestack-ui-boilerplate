@@ -13,7 +13,5 @@ export default function Index() {
     );
   }
 
-  console.log("is loagged in   ", isLoggedIn)
-
   return <Redirect href={isLoggedIn ? "/app" : "/auth/login"} />;
 }

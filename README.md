@@ -2,7 +2,7 @@
 
 A production-ready Expo boilerplate with beautiful Gluestack UI components, complete authentication flow, advanced analytics, and comprehensive testing setup.
 
-![Expo](https://img.shields.io/badge/Expo-5.3.0-blue)
+![Expo](https://img.shields.io/badge/Expo-53.0.20-blue)
 ![React Native](https://img.shields.io/badge/React%20Native-0.79.5-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue)
 
@@ -47,15 +47,26 @@ A production-ready Expo boilerplate with beautiful Gluestack UI components, comp
 ## 🏗️ Project Structure
 
 ```
-src/
-├── components/     # Reusable Gluestack UI components
-├── contexts/       # React contexts (auth, theme, etc.)
-├── hooks/          # Custom React hooks
-├── screens/        # App screens (auth, profile, settings)
-├── services/       # API services and clients
-├── types/          # TypeScript type definitions
-├── utils/          # Helper functions and validations
-└── __tests__/      # Unit tests
+MY-APP/
+├── app/                    # Root app directory (Expo Router)
+│   ├── _layout.tsx        # Root layout (entire app)
+│   ├── index.tsx          # Entry point (splash/home)
+│   ├── auth/              # Authentication flow (public)
+│   │   ├── login.tsx
+│   │   ├── signup.tsx
+│   │   ├── forgot-password.tsx
+│   │   └── _layout.tsx    # Auth layout
+│   └── app/               # Main app screens (protected)
+│       ├── _layout.tsx    # App layout (protected routes)
+│       ├── profile.tsx    # User profile screen
+│       └── settings.tsx   # App settings screen
+├── assets/                # Images, fonts, icons
+├── components/            # Reusable UI components
+├── android/               # Prebuild native direcotry
+├── ios/                   # Prebuild native direcotry
+├── .maestro/              # E2E testing
+│   └── auth_flow.yaml     # Authentication test flow
+└── __tests__/             # Unit tests
 ```
 
 ## 🚀 Quick Start
@@ -205,6 +216,10 @@ yarn release:prod
 yarn rollback:staging
 yarn rollback:prod
 ```
+
+**Note:** Stash this before any build command if you haven't logged into Sentry and don't have a `SENTRY_AUTH_TOKEN`:
+```bash
+SENTRY_DISABLE_AUTO_UPLOAD=true
 
 ## 📊 Monitoring & Analytics
 
